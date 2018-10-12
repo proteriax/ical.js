@@ -1,12 +1,10 @@
-'use strict';
+const util = require('util');
+const path = require('path');
+const child_process = require('child_process');
 
-var util = require('util');
-var path = require('path');
-var child_process = require('child_process');
-
-var OLSON_DB_REMOTE = 'http://www.iana.org/time-zones/repository/releases/tzdata%s.tar.gz';
-var TZURL_DIR = process.env.TZURL_DIR || path.join(__dirname, '..', 'tools', 'tzurl')
-var OLSON_DIR = process.env.OLSON_DIR || path.join(TZURL_DIR, 'olson');
+const OLSON_DB_REMOTE = 'http://www.iana.org/time-zones/repository/releases/tzdata%s.tar.gz';
+const TZURL_DIR = process.env.TZURL_DIR || path.join(__dirname, '..', 'tools', 'tzurl');
+const OLSON_DIR = process.env.OLSON_DIR || path.join(TZURL_DIR, 'olson');
 
 module.exports = function(grunt) {
   grunt.registerTask('timezones', 'Get Olson timezone data', function() {

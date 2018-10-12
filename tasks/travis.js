@@ -1,7 +1,6 @@
 'use strict';
 
 module.exports = function(grunt) {
-
   grunt.config.set("travis", {
     branch: process.env.TRAVIS_BRANCH,
     leader: (process.env.TRAVIS_JOB_NUMBER || "").substr(-2) == ".1",

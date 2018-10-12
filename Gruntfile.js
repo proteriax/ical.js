@@ -1,17 +1,21 @@
-'use strict';
+const path = require('path');
 
-var path = require('path');
-
+/**
+ * @param {import('grunt')} grunt
+ */
 module.exports = function(grunt) {
+  /**
+   * @param {string} name
+   */
   function loadOptionalTask(name) {
-    var root = path.resolve('node_modules');
-    var tasksdir = path.join(root, name, 'tasks');
+    const root = path.resolve('node_modules');
+    const tasksdir = path.join(root, name, 'tasks');
     if (grunt.file.exists(tasksdir)) {
       grunt.loadNpmTasks(name);
     }
   }
 
-  var pkg = grunt.file.readJSON('package.json');
+  const pkg = grunt.file.readJSON('package.json');
   grunt.initConfig({
     pkg: pkg,
     libinfo: {
@@ -44,7 +48,7 @@ module.exports = function(grunt) {
 
       dist: {
         options: {
-          process: function(src, filepath) {
+          process(src, filepath) {
             return src.replace('"use strict";', '');
           }
         },
@@ -54,7 +58,7 @@ module.exports = function(grunt) {
 
       validator: {
         options: {
-          process: function(src, filepath) {
+          process(src, filepath) {
             return src.replace(grunt.config('libinfo.validator.dev'), grunt.config('libinfo.validator.prod'));
           }
         },

@@ -1,5 +1,7 @@
 .DS_Store
+.nyc_output
 node_modules
+mochawesome-report
 bower_components
 *.pyc
 tools/tzurl
@@ -11,3 +13,5 @@ ghpages-stage
 coverage/
 build/benchmark/ical_upstream.js
 junk/
+drafts
+tools/babel

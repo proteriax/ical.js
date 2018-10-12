@@ -12,18 +12,17 @@
         border: 1px solid black;
         margin-top: 1ex;
       }
-
       hr {
         border: 1px solid black;
       }
     </style>
-    <script type="text/javascript" src="https://rawgit.com/mozilla-comm/ical.js/master/build/ical.js"></script>
-    <script type="text/javascript">
+    <script src="https://rawgit.com/mozilla-comm/ical.js/master/build/ical.js"></script>
+    <script>
       function stringError(e) {
         return "Error: " + e +
-               ("fileName" in e ? "\nFilename: " + e.fileName : "") +
-               ("lineNumber" in e ? "\nLine: " + e.lineNumber : "") +
-               ("stack" in e ? "\nStack: " + e.stack : "");
+          ("fileName" in e ? "\nFilename: " + e.fileName : "") +
+          ("lineNumber" in e ? "\nLine: " + e.lineNumber : "") +
+          ("stack" in e ? "\nStack: " + e.stack : "");
       }
 
       function validate() {
@@ -42,38 +41,38 @@
 
         var jcal, from;
         try {
-            jcal = JSON.parse(data.value);
-            from = "json";
+          jcal = JSON.parse(data.value);
+          from = "json";
         } catch (jsonerr) {
-            try {
-                jcal = ICAL.parse(data.value);
-                from = "ical";
-            } catch (icalerr) {
-                error.textContent = "Couldn't parse as iCalendar:\n" +
-                    stringError(icalerr) + "\n\nNor as jCal:\n" +
-                    stringError(jsonerr);
-            }
+          try {
+            jcal = ICAL.parse(data.value);
+            from = "ical";
+          } catch (icalerr) {
+            error.textContent = "Couldn't parse as iCalendar:\n" +
+              stringError(icalerr) + "\n\nNor as jCal:\n" +
+              stringError(jsonerr);
+          }
         }
 
         if (from == "json") {
-            ical = ICAL.stringify(jcal);
-            jcal = ICAL.parse(ical);
+          ical = ICAL.stringify(jcal);
+          jcal = ICAL.parse(ical);
         } else if (from == "ical") {
-            ical = ICAL.stringify(jcal);
+          ical = ICAL.stringify(jcal);
         } else {
-            ical = jcal = null;
+          ical = jcal = null;
         }
 
         var totalRuntime = Date.now() - beginTime;
         duration.textContent = 'Total Runtime: ' + totalRuntime + ' ms';
 
         try {
-            jcalres.textContent = jcal ? JSON.stringify(jcal, null, " ") : "";
-            icalres.textContent = ical;
-            document.getElementById("jcalbox").style.display = "";
-            document.getElementById("icalbox").style.display = "";
+          jcalres.textContent = jcal ? JSON.stringify(jcal, null, " ") : "";
+          icalres.textContent = ical;
+          document.getElementById("jcalbox").style.display = "";
+          document.getElementById("icalbox").style.display = "";
         } catch (e) {
-            error.textContent = stringError(e);
+          error.textContent = stringError(e);
         }
 
         return false;

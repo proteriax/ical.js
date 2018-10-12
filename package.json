@@ -22,10 +22,21 @@
   ],
   "dependencies": {},
   "devDependencies": {
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "@types/async": "^2.0.50",
+    "@types/benchmark": "^1.0.31",
+    "@types/chai": "^4.1.6",
+    "@types/fs-extra": "^5.0.4",
+    "@types/grunt": "^0.4.24",
+    "@types/lodash": "^4.14.117",
+    "@types/mocha": "^5.2.5",
     "benchmark": "^2.1.4",
     "biased-opener": "^0.2.8",
     "chai": "^4.1.2",
     "coveralls": "^3.0.2",
+    "difflet": "^1.0.1",
+    "fs-extra": "^7.0.0",
     "grunt": "^1.0.3",
     "grunt-concurrent": "^2.3.1",
     "grunt-contrib-concat": "^1.0.1",
@@ -45,20 +56,25 @@
     "karma-sauce-launcher": "^1.2.0",
     "karma-spec-reporter": "^0.0.32",
     "minami": "^1.2.3",
-    "mocha": "^5.2.0"
+    "mocha": "^5.2.0",
+    "mochawesome": "^3.1.0",
+    "nyc": "^13.1.0",
+    "rollup": "^0.66.6",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-typescript": "^1.2.0",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.11.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "typescript": "^3.1.3"
   },
   "license": "MPL-2.0",
   "engine": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "scripts": {
-    "test": "grunt test-node"
+    "test": "mocha test/*.ts --require tools/register --reporter mochawesome"
   },
-  "files": [
-    "build/ical.js",
-    "build/ical.min.js",
-    "lib/ical/*.js"
-  ],
   "saucelabs": {
     "SL_Chrome": {
       "base": "SauceLabs",
