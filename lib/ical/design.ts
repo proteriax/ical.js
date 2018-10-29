@@ -24,20 +24,30 @@ const TO_VCARD_NEWLINE = /\\|,|\n/g
  */
 export interface DesignSet {
   /** Definitions for value types, keys are type names */
-  value: any
+  value: { [key: string]: Partial<Value> }
   /** Definitions for params, keys are param names */
-  param: any
+  param: { [key: string]: { [key: string]: any } }
   /** Defintions for properties, keys are property names */
-  property: any
+  property: { [key: string]: Partial<Prop> }
+}
+interface Prop {
+  defaultType: string
+  allowedTypes: string[]
+  multiValue: string
+  structuredValue: string
+  detectType(string: string): string
 }
 
-interface Value {
+interface Value<T = any> {
+  fromICAL(aValue: T, structuredEscape?: string): T | undefined
+  toICAL(aValue: T, structuredEscape?: string): T
+  decorate(aValue: any, props?: object): T
+  undecorate(aValue: T, props?: object): any
+  values?: T[]
   matches?: RegExp
-  fromICAL?(aValue: string, structuredEscape?: string): string
-  toICAL?(aValue: string, structuredEscape?: string): string
 }
 
-function createTextType(fromNewline: RegExp, toNewline: RegExp): Value {
+function createTextType(fromNewline: RegExp, toNewline: RegExp): Partial<Value> {
   return {
     matches: /.*/,
     fromICAL(aValue: string, structuredEscape?: string) {

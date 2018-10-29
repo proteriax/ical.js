@@ -284,7 +284,7 @@ export class Timezone {
     if (!aComponent.hasProperty('dtstart') ||
         !aComponent.hasProperty('tzoffsetto') ||
         !aComponent.hasProperty('tzoffsetfrom')) {
-      return null
+      return
     }
 
     const dtstart = aComponent.getFirstProperty('dtstart').getFirstValue()
@@ -429,7 +429,7 @@ export class Timezone {
    * @param to_zone         The target zone to conver to
    * @return The converted date/time object
    */
-  static convert_time(tt: Time, from_zone: Timezone, to_zone: Timezone): Time | null {
+  static convert_time(tt: Time, from_zone: Timezone, to_zone: Timezone): Time | undefined {
     if (tt.isDate ||
         from_zone.tzid === to_zone.tzid ||
         from_zone === Timezone.localTimezone ||
@@ -443,8 +443,6 @@ export class Timezone {
 
     utcOffset = to_zone.utcOffset(tt)
     tt.adjust(0, 0, 0, utcOffset)
-
-    return null
   }
 
   /**

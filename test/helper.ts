@@ -1,16 +1,23 @@
+import * as _ from 'lodash'
 import * as fs from 'fs-extra'
 import { resolve } from 'path'
-import { suiteTeardown } from 'mocha'
 
-type ICAL = typeof import('./ical')
+type ICAL = ReturnType<typeof import('./ical').getICAL>
 
-export async function defineSample(filename: string): Promise<string> {
+export const defineSample = (filename: string): Promise<string> => {
   if (!filename || filename.includes('undefined')) {
     console.trace()
     throw new Error('No filename provided.')
   }
+  return fs.readFile(resolve(`./samples/${filename}`), 'utf8')
+}
 
-  return await fs.readFile(resolve(`./samples/${filename}`), 'utf8')
+export function spy<T, K extends keyof T>(obj: T, name: K, callback: T[K]) {
+  const fn: any = obj[name]
+  obj[name] = <any> function () {
+    (callback as any).apply(this, arguments)
+    return fn.apply(this, arguments)
+  }
 }
 
 /**
@@ -33,6 +40,9 @@ const _timezones = Object.create(null)
  */
 export async function registerTimezone(ICAL: ICAL, zone: string) {
   const ics = _timezones[zone]
+  if (!zone) {
+    throw new TypeError('Unexpected empty zone.')
+  }
 
   function register(ics: string) {
     const parsed = ICAL.parse(ics)
@@ -60,13 +70,8 @@ export async function registerTimezone(ICAL: ICAL, zone: string) {
  *
  */
 export function useTimezones(ICAL: ICAL, ...zones: string[]) {
-  suiteTeardown(() => {
-    // to ensure clean tests
-    ICAL.TimezoneService.reset()
-  })
-
   zones.forEach((zone) => {
-    registerTimezone.call(zone)
+    registerTimezone(ICAL, zone)
   })
 }
 

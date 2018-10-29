@@ -1,7 +1,8 @@
-import * as ICAL from '../ical'
 import { describe, it } from 'mocha'
 import { Suite } from 'benchmark'
 import { requireBenchmarkBuild } from '../helper'
+
+type ICAL = ReturnType<typeof import('../ical').getICAL>
 
 /**
  * Define a performance suite...
@@ -9,7 +10,7 @@ import { requireBenchmarkBuild } from '../helper'
 
 const VERSIONS = ['latest', 'previous', 'upstream']
 
-type Scope = (context: Context, ical: typeof ICAL) => void
+type Scope = (context: Context, ical: ICAL) => void
 
 class Context {
   bench: Suite
@@ -55,7 +56,7 @@ class Context {
     this.bench.add(this.prefix + name, test)
   }
 
-  compare(suite: (context: Context, ical: typeof ICAL) => void) {
+  compare(suite: (context: Context, ical: ICAL) => void) {
     VERSIONS.forEach(async (versionName) => {
       const context = new Context(this.bench, {
         icalVersion: versionName,

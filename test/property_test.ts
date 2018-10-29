@@ -1,9 +1,14 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
+import { describe, it, beforeEach } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('Property', function () {
-  const fixtures = {
+  let fixtures: ReturnType<typeof getFixtures>
+  beforeEach(() => fixtures = getFixtures())
+
+  const getFixtures = () => ({
     component: [ 'vevent', [], [] ],
     vcardComponent: ['vcard', [], []],
 
@@ -46,7 +51,7 @@ describe('Property', function () {
       'two',
       'three'
     ]
-  }
+  })
 
   describe('initialization', function () {
 
@@ -56,7 +61,7 @@ describe('Property', function () {
         new ICAL.Component(fixtures.component)
       )
 
-      expect(subject.jCal).to.equal(fixtures.textProp)
+      expect(subject.jCal).to.deep.equal(fixtures.textProp)
       expect(subject.name).to.equal('description')
       expect(subject.type).to.equal('text')
 
@@ -153,20 +158,20 @@ describe('Property', function () {
     })
   })
 
-  it('#getParameter', function () {
+  it('#getParameter', () => {
     const subject = new ICAL.Property(fixtures.withParams)
     expect(subject.getParameter('rsvp')).to.equal('TRUE')
     expect(subject.getParameter('wtf')).to.equal(undefined)
   })
 
-  describe('#getFirstParameter', function () {
-    it('with multivalue parameter', function () {
+  describe('#getFirstParameter', () => {
+    it('with multivalue parameter', () => {
       const subject = new ICAL.Property('categories')
       subject.setParameter('categories', ['Home', 'Work'])
       expect(subject.getFirstParameter('categories')).to.equal('Home')
     })
 
-    it('with string parameter', function () {
+    it('with string parameter', () => {
       const subject = new ICAL.Property(fixtures.withParams)
       expect(subject.getFirstParameter('rsvp')).to.equal('TRUE')
     })
@@ -180,9 +185,7 @@ describe('Property', function () {
   })
 
   it('#setParameter', function () {
-    const subject = new ICAL.Property(
-      fixtures.textProp
-    )
+    const subject = new ICAL.Property(fixtures.textProp)
 
     subject.setParameter(
       'my-prop',

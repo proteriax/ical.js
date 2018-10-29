@@ -1,9 +1,11 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
-import { describe, setup, it } from 'mocha'
+import { describe, it, beforeEach } from 'mocha'
 
-describe('Component', function () {
-  const fixtures = {
+const ICAL = getICAL()
+
+describe('Component', () => {
+  const getFixtures = () => ({
     components: [
       'vevent',
       [
@@ -17,13 +19,15 @@ describe('Component', function () {
         ['valarm', [['description', {}, 'text', 'foo']], []]
       ]
     ] as any[]
-  }
-  let subject = new ICAL.Component(fixtures.components)
+  })
+
+  let fixtures = getFixtures()
+  beforeEach(() => fixtures = getFixtures())
 
   describe('initialization', function () {
     it('initialize component', function () {
       const raw = ['description', {}, 'text', 'value']
-      subject = new ICAL.Component(raw)
+      const subject = new ICAL.Component(raw)
 
       expect(subject.jCal).to.equal(raw, 'has jCal')
       expect(subject.name).to.equal('description')
@@ -59,11 +63,11 @@ describe('Component', function () {
 
     it('does the basic', function () {
       // Tom and Bernhard are best friends. They are happy and single.
-      expect(tom.parent).to.be.null
-      expect(bernhard.parent).to.be.null
+      expect(tom.parent).to.not.exist
+      expect(bernhard.parent).to.not.exist
 
       // One day, they get to know Marge, who is also single.
-      expect(marge.parent).to.be.null
+      expect(marge.parent).to.not.exist
 
       // Tom and Bernhard play rock paper scissors on who gets a first shot at
       // Marge and Tom wins. After a few nice dates they get together.
@@ -72,17 +76,17 @@ describe('Component', function () {
 
       // Both are happy as can be and tell everyone about their love. Nothing
       // goes above their relationship!
-      expect(relationship.parent).to.be.null
+      expect(relationship.parent).to.not.exist
       expect(tom.parent).to.equal(relationship)
       expect(marge.parent).to.equal(relationship)
 
       // Over the years, there are a few ups and downs.
       relationship.removeSubcomponent(tom)
-      expect(relationship.parent).to.be.null
-      expect(tom.parent).to.be.null
+      expect(relationship.parent).to.not.exist
+      expect(tom.parent).to.not.exist
       expect(marge.parent).to.equal(relationship)
       relationship.removeAllSubcomponents()
-      expect(marge.parent).to.be.null
+      expect(marge.parent).to.not.exist
 
       // But in the end they stay together.
       relationship.addSubcomponent(tom)
@@ -135,7 +139,7 @@ describe('Component', function () {
       // own house. A long visit in the hospital lets neighbors believe noone
       // lives there anymore.
       tom.removeProperty(house)
-      expect(house.parent).to.be.null
+      expect(house.parent).to.not.exist
 
       // Marge spends a few nights there, but also lives in her other house.
       marge.addProperty(house)
@@ -147,8 +151,8 @@ describe('Component', function () {
       // house. Unfortunately marge can no longer pay the rent for her other
       // house either.
       marge.removeAllProperties()
-      expect(house.parent).to.be.null
-      expect(otherhouse.parent).to.be.null
+      expect(house.parent).to.not.exist
+      expect(otherhouse.parent).to.not.exist
 
       // What a mess. What do we learn from this testsuite? Infidelity is not a
       // good idea. Always be faithful!
@@ -157,7 +161,7 @@ describe('Component', function () {
 
   describe('#getFirstSubcomponent', function () {
     const jCal = fixtures.components
-    subject = new ICAL.Component(jCal)
+    const subject = new ICAL.Component(jCal)
 
     it('without name', function () {
       const component = subject.getFirstSubcomponent()!
@@ -188,14 +192,12 @@ describe('Component', function () {
     })
   })
 
-  describe('#getAllSubcomponents', function () {
+  describe('#getAllSubcomponents', () => {
+    const subject = new ICAL.Component(fixtures.components)
     it('with components', function () {
       // 2 is the component array
       const comps = fixtures.components[2]
-
-      subject = new ICAL.Component(
-        fixtures.components
-      )
+      const subject = new ICAL.Component(fixtures.components)
 
       const result = subject.getAllSubcomponents()
       expect(result).to.have.lengthOf(comps.length)
@@ -207,8 +209,7 @@ describe('Component', function () {
     })
 
     it('with name', function () {
-      subject = new ICAL.Component(fixtures.components)
-
+      const subject = new ICAL.Component(fixtures.components)
       const result = subject.getAllSubcomponents('valarm')
       expect(result).to.have.lengthOf(2)
 
@@ -218,7 +219,7 @@ describe('Component', function () {
     })
 
     it('without components', function () {
-      subject = new ICAL.Component(['foo', [], []])
+      const subject = new ICAL.Component(['foo', [], []])
       expect(subject.name).to.equal('foo')
       expect(subject.getAllSubcomponents()).to.be.empty
     })
@@ -235,12 +236,13 @@ describe('Component', function () {
       const results = oursubject.getAllSubcomponents()
       for (let i = 0; i < results.length; i++) {
         expect(results[i]).to.not.be.null
-        expect(results[i].jCal).to.equal(subject.jCal[2][i])
+        expect(results[i].jCal).to.deep.equal(subject.jCal[2][i])
       }
     })
   })
 
   it('#addSubcomponent', function () {
+    const subject = new ICAL.Component(fixtures.components)
     const newComp = new ICAL.Component('xnew')
 
     subject.addSubcomponent(newComp)
@@ -252,7 +254,10 @@ describe('Component', function () {
   })
 
   describe('#removeSubcomponent', function () {
+    const getSubject = () => new ICAL.Component(fixtures.components)
+
     it('by name', function () {
+      const subject = getSubject()
       subject.removeSubcomponent('vtodo')
 
       const all = subject.getAllSubcomponents()
@@ -263,6 +268,7 @@ describe('Component', function () {
     })
 
     it('by component', function () {
+      const subject = getSubject()
       const first = subject.getFirstSubcomponent()!
       subject.removeSubcomponent(first)
       expect(subject.getFirstSubcomponent()).to.not.equal(first)
@@ -286,7 +292,8 @@ describe('Component', function () {
     })
   })
 
-  describe('#removeAllSubcomponents', function () {
+  describe('#removeAllSubcomponents', () => {
+    const subject = new ICAL.Component(fixtures.components)
     it('with name', function () {
       subject.removeAllSubcomponents('valarm')
       expect(subject.jCal[2]).to.have.lengthOf(1)
@@ -302,10 +309,7 @@ describe('Component', function () {
   })
 
   it('#hasProperty', function () {
-    subject = new ICAL.Component(
-      fixtures.components
-    )
-
+    const subject = new ICAL.Component(fixtures.components)
     expect(subject.hasProperty('description'))
     expect(!subject.hasProperty('iknowitsnothere'))
   })
@@ -325,7 +329,7 @@ describe('Component', function () {
 
     it('without name', function () {
       const first = subject.getFirstProperty()!
-      expect(first.jCal).to.equal(fixtures.components[1][0])
+      expect(first.jCal).to.deep.equal(fixtures.components[1][0])
     })
 
     it('without name empty', function () {
@@ -339,31 +343,31 @@ describe('Component', function () {
     expect(subject.getFirstPropertyValue()).to.equal('xfoo')
   })
 
-  describe('#getAllProperties', function () {
+  describe('#getAllProperties', () => {
     const subject = new ICAL.Component(fixtures.components)
 
-    it('with name', function () {
+    it('with name', () => {
       const results = subject.getAllProperties('description')
       expect(results).to.have.lengthOf(2)
 
-      results.forEach(function (item, i) {
-        expect(item.jCal).to.equal(subject.jCal[1][i])
+      results.forEach((item, i) => {
+        expect(item.jCal).to.deep.equal(subject.jCal[1][i])
       })
     })
 
-    it('with name empty', function () {
+    it('with name empty', () => {
       const results = subject.getAllProperties('wtfmissing')
       expect(results).to.be.empty
     })
 
-    it('without name', function () {
+    it('without name', () => {
       const results = subject.getAllProperties()
-      results.forEach(function (item, i) {
-        expect(item.jCal).to.equal(subject.jCal[1][i])
+      results.forEach((item, i) => {
+        expect(item.jCal).to.deep.equal(subject.jCal[1][i])
       })
     })
 
-    it('with name from end', function () {
+    it('with name from end', () => {
       // We need our own subject for this test
       const oursubject = new ICAL.Component(fixtures.components)
 
@@ -375,12 +379,13 @@ describe('Component', function () {
       const results = oursubject.getAllProperties()
       for (let i = 0; i < results.length; i++) {
         expect(results[i]).to.not.be.null
-        expect(results[i].jCal).to.equal(subject.jCal[1][i])
+        expect(results[i].jCal).to.deep.equal(subject.jCal[1][i])
       }
     })
   })
 
-  it('#addProperty', function () {
+  it('#addProperty', () => {
+    const subject = new ICAL.Component(fixtures.components)
     const prop = new ICAL.Property('description')
 
     subject.addProperty(prop)
@@ -393,7 +398,7 @@ describe('Component', function () {
     expect(lastProp.parent).to.equal(subject)
   })
 
-  it('#addPropertyWithValue', function () {
+  it('#addPropertyWithValue', () => {
     const subject = new ICAL.Component('vevent')
 
     subject.addPropertyWithValue('description', 'value')
@@ -404,7 +409,7 @@ describe('Component', function () {
     expect(all[0].getFirstValue()).to.equal('value')
   })
 
-  it('#updatePropertyWithValue', function () {
+  it('#updatePropertyWithValue', () => {
     const subject = new ICAL.Component('vevent')
     subject.addPropertyWithValue('description', 'foo')
     expect(subject.getAllProperties()).to.have.lengthOf(1)
@@ -419,14 +424,16 @@ describe('Component', function () {
   })
 
   describe('#removeProperty', () => {
-    const subject = new ICAL.Component(fixtures.components)
+    const getSubject = () => new ICAL.Component(fixtures.components)
 
     it('try to remove non-existent', () => {
+      const subject = getSubject()
       const result = subject.removeProperty('wtfbbq')
       expect(result).to.be.false
     })
 
     it('remove by property', () => {
+      const subject = getSubject()
       const first = subject.getFirstProperty('description')!
       const result = subject.removeProperty(first)
       expect(result, 'removes property').to.be.true
@@ -435,6 +442,7 @@ describe('Component', function () {
     })
 
     it('remove by name', () => {
+      const subject = getSubject()
       // there are two descriptions
       const list = subject.getAllProperties()
       const first = subject.getFirstProperty('description')
@@ -468,13 +476,13 @@ describe('Component', function () {
       expect(!subject.getFirstProperty())
     })
 
-    it('no name when not empty', function () {
-      subject = new ICAL.Component(['vevent', [], []])
+    it('no name when not empty', () => {
+      const subject = new ICAL.Component(['vevent', [], []])
       subject.removeAllProperties()
       subject.removeAllProperties('xfoo')
     })
 
-    it('with name', function () {
+    it('with name', () => {
       const subject = new ICAL.Component(fixtures.components)
 
       subject.removeAllProperties('description')
@@ -487,19 +495,22 @@ describe('Component', function () {
     })
   })
 
-  it('#toJSON', function () {
-    const json = JSON.stringify(subject)
-    const fromJSON = new ICAL.Component(JSON.parse(json))
+  describe('JSON conversion', () => {
+    const subject = new ICAL.Component(fixtures.components)
 
-    expect(fromJSON.jCal).to.deep.equal(subject.jCal)
+    it('#toJSON', () => {
+      const json = JSON.stringify(subject)
+      const fromJSON = new ICAL.Component(JSON.parse(json))
+
+      expect(fromJSON.jCal).to.deep.equal(subject.jCal)
+    })
+
+    it('#toString', function () {
+      const ical = subject.toString()
+      const parsed = ICAL.parse(ical)
+      const fromICAL = new ICAL.Component(parsed)
+
+      expect(subject.jCal).to.deep.equal(fromICAL.jCal)
+    })
   })
-
-  it('#toString', function () {
-    const ical = subject.toString()
-    const parsed = ICAL.parse(ical)
-    const fromICAL = new ICAL.Component(parsed)
-
-    expect(subject.jCal).to.deep.equal(fromICAL.jCal)
-  })
-
 })

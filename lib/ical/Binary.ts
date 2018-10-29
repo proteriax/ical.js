@@ -1,20 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * Portions Copyright (C) Philipp Kewisch, 2011-2015 */
-
-
-/**
- * This symbol is further described later on
- * @ignore
+ * Portions Copyright (C) Philipp Kewisch, 2011-2015
  */
 
 /**
  * Represents the BINARY value type, which contains extra methods for
  * encoding and decoding.
- *
- * @class
- * @alias ICAL.Binary
  */
 export class Binary {
   value: null | string

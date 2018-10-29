@@ -4,6 +4,7 @@ node_modules
 mochawesome-report
 bower_components
 *.pyc
+a.txt
 tools/tzurl
 tools/libical
 zoneinfo
@@ -15,3 +16,4 @@ build/benchmark/ical_upstream.js
 junk/
 drafts
 tools/babel
+.idea

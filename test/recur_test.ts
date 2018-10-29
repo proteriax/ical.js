@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import { RecurOptions } from '../lib/ical/Recur'
+
+const ICAL = getICAL()
 
 describe('recur', () => {
   const Time = ICAL.Time
@@ -11,9 +13,9 @@ describe('recur', () => {
       const recur = new ICAL.Recur()
       expect(recur.interval).to.equal(1)
       expect(recur.wkst).to.equal(ICAL.Time.MONDAY)
-      expect(recur.until).is.null
-      expect(recur.count).is.null
-      expect(recur.freq).is.null
+      expect(recur.until).to.not.exist
+      expect(recur.count).to.not.exist
+      expect(recur.freq).to.not.exist
     })
   })
 
@@ -232,7 +234,7 @@ describe('recur', () => {
         count: props.count,
       })
 
-      expect(fromJSON.parts).to.include({
+      expect(fromJSON.parts).to.deep.include({
         BYDAY: props.byday,
         BYSETPOS: [props.bysetpos]
       })
@@ -281,7 +283,7 @@ describe('recur', () => {
           delete options.until
           expect(result.until).to.include(until)
         }
-        expect(result).to.include(options)
+        expect(result).to.deep.include(options)
       })
     }
 
@@ -414,7 +416,7 @@ describe('recur', () => {
       const recId = dtstart.clone()
       recId.day += 20
 
-      expect(rec.getNextOccurrence(dtstart, recId)).to.be.null
+      expect(rec.getNextOccurrence(dtstart, recId)).to.not.exist
     })
   })
 

@@ -15,7 +15,7 @@ export { Time, WeekDay } from './Time'
 export { Timezone } from './Timezone'
 export { UtcOffset } from './UTCOffset'
 export { VCardTime } from './VCardTime'
-export { foldLength, newLineChar } from './helpers'
+export { foldLength, newLineChar, setFoldLength } from './helpers'
 
 import * as helpers from './helpers'
 export { helpers }

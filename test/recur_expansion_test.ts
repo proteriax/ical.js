@@ -1,36 +1,36 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample } from './helper'
 import { describe, it } from 'mocha'
 
+const ICAL = getICAL()
+
 describe('recur_expansion', async () => {
-  let subject
-  let primary
+  let subject: ical.RecurExpansion
+  let primary: ical.Event
 
   async function createSubject(file: string) {
     const icsData = await defineSample(file)
     await new Promise((done) => {
       const exceptions: ical.Event[] = []
+      const parse = ICAL.ComponentParser()
 
-      const parse = new ICAL.ComponentParser()
-
-      parse.onevent = function (event) {
+      parse.on('event', (event) => {
         if (event.isRecurrenceException()) {
           exceptions.push(event)
         } else {
           primary = event
         }
-      }
+      })
 
-      parse.oncomplete = function () {
+      parse.on('complete', () => {
         exceptions.forEach(primary.relateException, primary)
         subject = new ICAL.RecurExpansion({
           component: primary.component,
           dtstart: primary.startDate
         })
-
         done()
-      }
+      })
 
       parse.process(icsData[file])
     })
@@ -41,8 +41,8 @@ describe('recur_expansion', async () => {
   describe('initialization', function () {
     it('successful', function () {
       expect(new Date(2012, 9, 2, 10)).to.deep.equal(subject.last.toJSDate())
-      expect(subject.ruleIterators).to.be.an('array')
-      expect(subject.exDates)
+      expect((subject as any).ruleIterators).to.be.an('array')
+      expect((subject as any).exDates)
     })
 
     it('invalid', () => {
@@ -103,9 +103,9 @@ describe('recur_expansion', async () => {
         new Date(2013, 3, 2, 10)
       ]
 
-      const dates = subject.exDates.map(function (time) {
-        return time.toJSDate()
-      })
+      const dates = (subject as any).exDates.map((time) =>
+        time.toJSDate()
+      )
 
       expect(expected).to.equal(dates)
     })

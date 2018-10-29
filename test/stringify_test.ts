@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { load } from './helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('ICAL.stringify', () => {
 
@@ -94,17 +96,17 @@ describe('ICAL.stringify', () => {
       const N = ICAL.newLineChar + ' '
       subject.setValue('foobar')
 
-      ICAL[`foldLength` + ''] = 19
+      ICAL.setFoldLength(19)
       expect(subject.toICALString()).to.equal('DESCRIPTION:foobar')
       expect(ICAL.stringify.property(subject.toJSON(), ICAL.design.icalendar, false)).to.equal('DESCRIPTION:foobar')
       expect(ICAL.stringify.property(subject.toJSON(), ICAL.design.icalendar, true)).to.equal( 'DESCRIPTION:foobar')
 
-      ICAL[`foldLength` + ''] = 15
+      ICAL.setFoldLength(15)
       expect(subject.toICALString()).to.equal('DESCRIPTION:foobar')
       expect(ICAL.stringify.property(subject.toJSON(), ICAL.design.icalendar, false)).to.equal('DESCRIPTION:foo' + N + 'bar')
       expect(ICAL.stringify.property(subject.toJSON(), ICAL.design.icalendar, true)).to.equal('DESCRIPTION:foobar')
 
-      ICAL[`foldLength` + ''] = oldLength
+      ICAL.setFoldLength(oldLength)
     })
   })
 

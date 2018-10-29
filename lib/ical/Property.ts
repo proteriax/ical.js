@@ -8,11 +8,9 @@ import { stringify } from './stringify'
 import { parse } from './parse'
 import { Component } from './Component'
 
-const NAME_INDEX = 0
-const PROP_INDEX = 1
-const TYPE_INDEX = 2
-const VALUE_INDEX = 3
-
+const enum Index {
+  Name, Prop, Type, Value
+}
 
 /**
  * @classdesc
@@ -30,8 +28,8 @@ const VALUE_INDEX = 3
  */
 export class Property<V = any> {
   jCal
-  _parent?: Component
-  _values: V[]
+  private _parent?: Component
+  private _values: V[]
   isDecorated: boolean
   isMultiValue: boolean
   isStructuredValue: boolean
@@ -43,12 +41,12 @@ export class Property<V = any> {
   constructor(jCal: string | any[], parent?: Component) {
     this._parent = parent
 
-    if (typeof(jCal) === 'string') {
+    if (typeof jCal === 'string') {
       // We are creating the property by name and need to detect the type
       this.jCal = [jCal, {}, design.defaultType]
-      this.jCal[TYPE_INDEX] = this.getDefaultType()
+      this.jCal[Index.Type] = this.getDefaultType()
     } else {
-      this.jCal = jCal
+      this.jCal = [...jCal]
     }
     this._updateType()
   }
@@ -58,7 +56,7 @@ export class Property<V = any> {
    * @readonly
    */
   get type() {
-    return this.jCal[TYPE_INDEX]
+    return this.jCal[Index.Type]
   }
 
   /**
@@ -66,7 +64,7 @@ export class Property<V = any> {
    * @readonly
    */
   get name() {
-    return this.jCal[NAME_INDEX]
+    return this.jCal[Index.Name]
   }
 
   /**
@@ -84,7 +82,7 @@ export class Property<V = any> {
     this._parent = p
 
     if (this.type === design.defaultType && designSetChanged) {
-      this.jCal[TYPE_INDEX] = this.getDefaultType()
+      this.jCal[Index.Type] = this.getDefaultType()
       this._updateType()
     }
   }
@@ -98,10 +96,8 @@ export class Property<V = any> {
 
   /**
    * Updates the type metadata from the current jCal type and design set.
-   *
-   * @private
    */
-  _updateType() {
+  private _updateType() {
     const designSet = this._designSet
 
     if (this.type in designSet.value) {
@@ -122,18 +118,17 @@ export class Property<V = any> {
    * Hydrate a single value. The act of hydrating means turning the raw jCal
    * value into a potentially wrapped object, for example {@link Time}.
    *
-   * @private
-   * @param index        The index of the value to hydrate
+   * @param index The index of the value to hydrate
    * @return The decorated value.
    */
-  _hydrateValue(index: number): null | V {
+  private _hydrateValue(index: number): undefined | V {
     if (this._values && this._values[index]) {
       return this._values[index]
     }
 
     // for the case where there is no value.
-    if (this.jCal.length <= (VALUE_INDEX + index)) {
-      return null
+    if (this.jCal.length <= (Index.Value + index)) {
+      return
     }
 
     if (this.isDecorated) {
@@ -141,11 +136,11 @@ export class Property<V = any> {
         this._values = []
       }
       this._values[index] = this._decorate(
-        this.jCal[VALUE_INDEX + index]
+        this.jCal[Index.Value + index]
       )
       return this._values[index]
     } else {
-      return this.jCal[VALUE_INDEX + index]
+      return this.jCal[Index.Value + index]
     }
   }
 
@@ -153,23 +148,21 @@ export class Property<V = any> {
    * Decorate a single value, returning its wrapped object. This is used by
    * the hydrate function to actually wrap the value.
    *
-   * @private
    * @param {?} value         The value to decorate
    * @return The decorated value
    */
-  _decorate(value: any): any {
-    return this._designSet.value[this.type].decorate(value, this)
+  private _decorate(value: any): any {
+    return this._designSet.value[this.type].decorate!(value, this)
   }
 
   /**
    * Undecorate a single value, returning its raw jCal data.
    *
-   * @private
    * @param value         The value to undecorate
    * @return {?}                   The undecorated value
    */
-  _undecorate(value: object): any {
-    return this._designSet.value[this.type].undecorate(value, this)
+  private _undecorate(value: object): any {
+    return this._designSet.value[this.type].undecorate!(value, this)
   }
 
   /**
@@ -180,18 +173,18 @@ export class Property<V = any> {
    * @param {?} value             The value to set
    * @param index        The index to set it at
    */
-  _setDecoratedValue(value: any, index: number) {
+  private _setDecoratedValue(value: any, index: number) {
     if (!this._values) {
       this._values = []
     }
 
     if (typeof(value) === 'object' && 'icaltype' in value) {
       // decorated value
-      this.jCal[VALUE_INDEX + index] = this._undecorate(value)
+      this.jCal[Index.Value + index] = this._undecorate(value)
       this._values[index] = value
     } else {
       // undecorated value
-      this.jCal[VALUE_INDEX + index] = value
+      this.jCal[Index.Value + index] = value
       this._values[index] = this._decorate(value)
     }
   }
@@ -203,8 +196,8 @@ export class Property<V = any> {
    * @return  Property value
    */
   getParameter(name: string): Array<any> | string | undefined {
-    if (name in this.jCal[PROP_INDEX]) {
-      return this.jCal[PROP_INDEX][name]
+    if (name in this.jCal[Index.Prop]) {
+      return this.jCal[Index.Prop][name]
     }
   }
 
@@ -237,7 +230,7 @@ export class Property<V = any> {
         'multiValue' in this._designSet.param[lcname]) {
         value = [value]
     }
-    this.jCal[PROP_INDEX][name] = value
+    this.jCal[Index.Prop][name] = value
   }
 
   /**
@@ -246,7 +239,7 @@ export class Property<V = any> {
    * @param name     The parameter name
    */
   removeParameter(name: string) {
-    delete this.jCal[PROP_INDEX][name]
+    delete this.jCal[Index.Prop][name]
   }
 
   /**
@@ -255,13 +248,13 @@ export class Property<V = any> {
    * @return The default type for this property
    */
   getDefaultType(): string {
-    const name = this.jCal[NAME_INDEX]
+    const name = this.jCal[Index.Name]
     const designSet = this._designSet
 
     if (name in designSet.property) {
       const details = designSet.property[name]
       if ('defaultType' in details) {
-        return details.defaultType
+        return details.defaultType!
       }
     }
     return design.defaultType
@@ -275,7 +268,7 @@ export class Property<V = any> {
    */
   resetType(type: string) {
     this.removeAllValues()
-    this.jCal[TYPE_INDEX] = type
+    this.jCal[Index.Type] = type
     this._updateType()
   }
 
@@ -296,7 +289,7 @@ export class Property<V = any> {
    * @return List of values
    */
   getValues(): Array<V> {
-    const len = this.jCal.length - VALUE_INDEX
+    const len = this.jCal.length - Index.Value
 
     if (len < 1) {
       // its possible for a property to have no value.
@@ -352,7 +345,7 @@ export class Property<V = any> {
       }
     } else {
       for (; i < len; i++) {
-        this.jCal[VALUE_INDEX + i] = values[i]
+        this.jCal[Index.Value + i] = values[i]
       }
     }
   }
@@ -372,7 +365,7 @@ export class Property<V = any> {
     if (this.isDecorated) {
       this._setDecoratedValue(value, 0)
     } else {
-      this.jCal[VALUE_INDEX] = value
+      this.jCal[Index.Value] = value
     }
   }
 

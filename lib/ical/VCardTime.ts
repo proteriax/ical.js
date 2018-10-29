@@ -98,8 +98,8 @@ export class VCardTime extends Time {
     const y = this.year, m = this.month, d = this.day
     const h = this.hour, mm = this.minute, s = this.second
 
-    const hasYear = y !== null, hasMonth = m !== null, hasDay = d !== null
-    const hasHour = h !== null, hasMinute = mm !== null, hasSecond = s !== null
+    const hasYear = y != null, hasMonth = m != null, hasDay = d != null
+    const hasHour = h != null, hasMinute = mm != null, hasSecond = s != null
 
     const datepart = (hasYear ? p2(y) + (hasMonth || hasDay ? '-' : '') : (hasMonth || hasDay ? '--' : '')) +
                     (hasMonth ? p2(m) : '') +

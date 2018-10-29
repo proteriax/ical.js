@@ -1,7 +1,10 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample } from './helper'
 import { describe, it, suiteTeardown } from 'mocha'
+
+const ICAL = getICAL()
+const None = undefined
 
 describe('design', async () => {
   const parsed = ICAL.parse(await defineSample('timezones/America/New_York.ics'))
@@ -110,23 +113,17 @@ describe('design', async () => {
         const decorated = dateTime.decorate(undecorated, prop)
         expect(decorated.zone).to.equal(timezone)
 
-        expect(
-          decorated).to.include(
-          {
-            year: 2012,
-            month: 9,
-            day: 1,
-            hour: 13,
-            minute: 5,
-            second: 11,
-            isDate: false
-          }
-        )
+        expect(decorated).to.include({
+          year: 2012,
+          month: 9,
+          day: 1,
+          hour: 13,
+          minute: 5,
+          second: 11,
+          isDate: false
+        })
 
-        expect(
-          dateTime.undecorate(decorated)).to.equal(
-          undecorated
-        )
+        expect(dateTime.undecorate(decorated)).to.equal(undecorated)
       })
     })
 
@@ -164,8 +161,8 @@ describe('design', async () => {
     })
 
     describe('vcard date/time types', () => {
-      function testRoundtrip(jcal, ical, props, only?: boolean) {
-        function testForType(type: string, valuePrefix?, valueSuffix?, zone?) {
+      function testRoundtrip(jcal: string, ical: string, props, only?: boolean) {
+        function testForType(type: string, valuePrefix?: string, valueSuffix?: string, zone?: string) {
           const subject = ICAL.design.vcard.value[type]
           const prefix = valuePrefix || ''
           const suffix = valueSuffix || ''
@@ -173,15 +170,15 @@ describe('design', async () => {
           const icalvalue = prefix + ical + suffix.replace(':', '')
           const zoneName = zone || valueSuffix || 'floating'
 
-          it(type + ' ' + zoneName + ' fromICAL/toICAL', () => {
-            expect(subject.fromICAL(icalvalue)).to.equal(jcalvalue)
-            expect(subject.toICAL(jcalvalue)).to.equal(icalvalue)
+          it(`${type} ${zoneName} fromICAL/toICAL`, () => {
+            expect(subject.fromICAL!(icalvalue)).to.equal(jcalvalue)
+            expect(subject.toICAL!(jcalvalue)).to.equal(icalvalue)
           })
 
-          it(type + ' ' + zoneName + ' decorated/undecorated', () => {
+          it(`${type} ${zoneName} decorated/undecorated`, () => {
             const prop = new ICAL.Property(['anniversary', {}, type])
-            const decorated = subject.decorate(jcalvalue, prop)
-            const undecorated = subject.undecorate(decorated)
+            const decorated = subject.decorate!(jcalvalue, prop)
+            const undecorated = subject.undecorate!(decorated)
 
             expect(decorated._time).to.include(props)
             expect(zoneName).to.equal(decorated.zone.toString())
@@ -189,8 +186,8 @@ describe('design', async () => {
             expect(decorated.toICALString()).to.equal(icalvalue)
           })
         }
-        (only ? describe.only : describe)(jcal, () => {
 
+        (only ? describe.only : describe)(jcal, () => {
           if (props.year || props.month || props.day) {
             testForType('date-and-or-time')
             if (!props.hour && !props.minute && !props.second) {
@@ -205,14 +202,14 @@ describe('design', async () => {
               testForType('date-and-or-time', 'T', '-08:00')
               testForType('date-and-or-time', 'T', '+08:00')
               testForType('time')
-              testForType('time', null, 'Z', 'UTC')
-              testForType('time', null, '-08:00')
-              testForType('time', null, '+08:00')
+              testForType('time', None, 'Z', 'UTC')
+              testForType('time', None, '-08:00')
+              testForType('time', None, '+08:00')
             } else {
-              testForType('date-and-or-time', null)
-              testForType('date-and-or-time', null, 'Z', 'UTC')
-              testForType('date-and-or-time', null, '-08:00')
-              testForType('date-and-or-time', null, '+08:00')
+              testForType('date-and-or-time', None)
+              testForType('date-and-or-time', None, 'Z', 'UTC')
+              testForType('date-and-or-time', None, '-08:00')
+              testForType('date-and-or-time', None, '+08:00')
             }
           }
         })
@@ -224,53 +221,53 @@ describe('design', async () => {
       // dates
       testRoundtrip('1985-04-12', '19850412', {
         year: 1985, month: 4, day: 12,
-        hour: null, minute: null, second: null
+        hour: None, minute: None, second: None
       })
       testRoundtrip('1985-04', '1985-04', {
-        year: 1985, month: 4, day: null,
-        hour: null, minute: null, second: null
+        year: 1985, month: 4, day: None,
+        hour: None, minute: None, second: None
       })
       testRoundtrip('1985', '1985', {
-        year: 1985, month: null, day: null,
-        hour: null, minute: null, second: null
+        year: 1985, month: None, day: None,
+        hour: None, minute: None, second: None
       })
       testRoundtrip('--04-12', '--0412', {
-        year: null, month: 4, day: 12,
-        hour: null, minute: null, second: null
+        year: None, month: 4, day: 12,
+        hour: None, minute: None, second: None
       })
       testRoundtrip('--04', '--04', {
-        year: null, month: 4, day: null,
-        hour: null, minute: null, second: null
+        year: None, month: 4, day: None,
+        hour: None, minute: None, second: None
       })
       testRoundtrip('---12', '---12', {
-        year: null, month: null, day: 12,
-        hour: null, minute: null, second: null
+        year: None, month: None, day: 12,
+        hour: None, minute: None, second: None
       })
 
       // times
       testRoundtrip('23:20:50', '232050', {
-        year: null, month: null, day: null,
+        year: None, month: None, day: None,
         hour: 23, minute: 20, second: 50,
       })
       testRoundtrip('23:20', '2320', {
-        year: null, month: null, day: null,
-        hour: 23, minute: 20, second: null,
+        year: None, month: None, day: None,
+        hour: 23, minute: 20, second: None,
       })
       testRoundtrip('23', '23', {
-        year: null, month: null, day: null,
-        hour: 23, minute: null, second: null,
+        year: None, month: None, day: None,
+        hour: 23, minute: None, second: None,
       })
       testRoundtrip('-20:50', '-2050', {
-        year: null, month: null, day: null,
-        hour: null, minute: 20, second: 50,
+        year: None, month: None, day: None,
+        hour: None, minute: 20, second: 50,
       })
       testRoundtrip('-20', '-20', {
-        year: null, month: null, day: null,
-        hour: null, minute: 20, second: null,
+        year: None, month: None, day: None,
+        hour: None, minute: 20, second: None,
       })
       testRoundtrip('--50', '--50', {
-        year: null, month: null, day: null,
-        hour: null, minute: null, second: 50,
+        year: None, month: None, day: None,
+        hour: None, minute: None, second: 50,
       })
 
       // date-times
@@ -280,27 +277,27 @@ describe('design', async () => {
       })
       testRoundtrip('1985-04-12T23:20', '19850412T2320', {
         year: 1985, month: 4, day: 12,
-        hour: 23, minute: 20, second: null
+        hour: 23, minute: 20, second: None
       })
       testRoundtrip('1985-04-12T23', '19850412T23', {
         year: 1985, month: 4, day: 12,
-        hour: 23, minute: null, second: null
+        hour: 23, minute: None, second: None
       })
       testRoundtrip('--04-12T23:20', '--0412T2320', {
-        year: null, month: 4, day: 12,
-        hour: 23, minute: 20, second: null
+        year: None, month: 4, day: 12,
+        hour: 23, minute: 20, second: None
       })
       testRoundtrip('--04T23:20', '--04T2320', {
-        year: null, month: 4, day: null,
-        hour: 23, minute: 20, second: null
+        year: None, month: 4, day: None,
+        hour: 23, minute: 20, second: None
       })
       testRoundtrip('---12T23:20', '---12T2320', {
-        year: null, month: null, day: 12,
-        hour: 23, minute: 20, second: null
+        year: None, month: None, day: 12,
+        hour: 23, minute: 20, second: None
       })
       testRoundtrip('--04T23', '--04T23', {
-        year: null, month: 4, day: null,
-        hour: 23, minute: null, second: null
+        year: None, month: 4, day: None,
+        hour: 23, minute: None, second: None
       })
     })
 
@@ -442,13 +439,13 @@ describe('design', async () => {
         const undecorated = {
           freq: ICAL.FrequencyValues.MONTHLY,
           byday: ['MO', 'TU', 'WE', 'TH', 'FR'],
-          until: ICAL.Time.fromDateString('2012-10-12'),
+          until: '2012-10-12',
         }
-        const decorated = recur.decorate(undecorated)
+        const decorated = recur.decorate(undecorated as any)
 
         expect(decorated).to.be.instanceOf(ICAL.Recur)
 
-        expect(decorated).to.include({
+        expect(decorated).to.deep.include({
           freq: 'MONTHLY',
           parts: {
             BYDAY: ['MO', 'TU', 'WE', 'TH', 'FR']
@@ -466,7 +463,7 @@ describe('design', async () => {
     })
 
     describe('utc-offset', () => {
-      const utcOffset = subject.value['utf-offset']
+      const utcOffset = subject.value['utc-offset']
 
       it('#(to|from)ICAL without seconds', () => {
         const original = '-0500'
@@ -506,20 +503,20 @@ describe('design', async () => {
 
       it('#(to|from)ICAL', () => {
         const original = '-05:00'
-        const fromICAL = utcOffset.fromICAL(original)
+        const fromICAL = utcOffset.fromICAL!(original)!
 
         expect(fromICAL).to.equal('-05:00')
-        expect(utcOffset.toICAL(fromICAL)).to.equal(original)
+        expect(utcOffset.toICAL!(fromICAL)).to.equal(original)
       })
 
       it('#(un)decorate', () => {
         const undecorated = '-05:00'
-        const decorated = utcOffset.decorate(undecorated)
+        const decorated = utcOffset.decorate!(undecorated)
 
         expect(decorated.hours).to.equal(5, 'hours')
         expect(decorated.factor).to.equal(-1, 'factor')
 
-        expect(utcOffset.undecorate(decorated)).to.equal(undecorated)
+        expect(utcOffset.undecorate!(decorated)).to.equal(undecorated)
       })
     })
 

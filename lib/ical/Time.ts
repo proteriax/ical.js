@@ -53,7 +53,7 @@ export const enum WeekDay {
  * Unlike JS Date, the month January is 1, not zero.
  */
 export class Time {
-  protected _time: TimeConstructorOptions
+  protected _time: TimeConstructorOptions = Object.create(null)
   /**
    * @example
    * var time = new Time({
@@ -69,37 +69,28 @@ export class Time {
    * @param zone Timezone this position occurs in
    */
   constructor(data?: Partial<TimeConstructorOptions>, zone?: Timezone) {
-    const time = this._time = Object.create(null)
-
-    /* time defaults */
-    time.year = 0
-    time.month = 1
-    time.day = 1
-    time.hour = 0
-    time.minute = 0
-    time.second = 0
-    time.isDate = false
-
     this.fromData(data, zone)
   }
 
   static _dowCache = {}
   static _wnCache = {}
 
+  // These are actually shortcuts to `_time`.
+
   /** The year for this date */
-  year: number
+  year = 0
   /** The month for this date */
-  month: number
+  month = 1
   /** The day for this date */
-  day: number
+  day = 1
   /** The hour for this date */
-  hour: number
+  hour = 0
   /** The minute for this date */
-  minute: number
+  minute = 0
   /** The second for this date */
-  second: number
+  second = 0
   /** If true, the instance represents a date (as opposed to a date-time) */
-  isDate: boolean
+  isDate = false
 
   private _cachedUnixTime?: number = 0
 
@@ -783,41 +774,36 @@ export class Time {
   /**
    * Adjust the date/time by the given offset
    *
-   * @param aExtraDays       The extra amount of days
-   * @param aExtraHours      The extra amount of hours
-   * @param aExtraMinutes    The extra amount of minutes
-   * @param aExtraSeconds    The extra amount of seconds
-   * @param {Number=} aTime           The time to adjust, defaults to the
-   *                                    current instance.
+   * @param aExtraDays     The extra amount of days
+   * @param aExtraHours    The extra amount of hours
+   * @param aExtraMinutes  The extra amount of minutes
+   * @param aExtraSeconds  The extra amount of seconds
+   * @param aTime          The time to adjust, defaults to the current instance.
    */
-  adjust(aExtraDays: number, aExtraHours: number, aExtraMinutes: number, aExtraSeconds: number, aTime = this._time) {
+  adjust(aExtraDays: number, aExtraHours: number, aExtraMinutes: number, aExtraSeconds: number, aTime = this._time): this {
 
-    let minutesOverflow, hoursOverflow,
-        daysOverflow = 0, yearsOverflow = 0
-
-    let second, minute, hour, day
-    let daysInMonth
+    let daysOverflow = 0, yearsOverflow = 0
 
     const time = aTime || this._time
 
     if (!time.isDate) {
-      second = time.second + aExtraSeconds
+      const second = time.second + aExtraSeconds
       time.second = second % 60
-      minutesOverflow = trunc(second / 60)
+      let minutesOverflow = trunc(second / 60)
       if (time.second < 0) {
         time.second += 60
         minutesOverflow--
       }
 
-      minute = time.minute + aExtraMinutes + minutesOverflow
+      const minute = time.minute + aExtraMinutes + minutesOverflow
       time.minute = minute % 60
-      hoursOverflow = trunc(minute / 60)
+      let hoursOverflow = trunc(minute / 60)
       if (time.minute < 0) {
         time.minute += 60
         hoursOverflow--
       }
 
-      hour = time.hour + aExtraHours + hoursOverflow
+      const hour = time.hour + aExtraHours + hoursOverflow
 
       time.hour = hour % 24
       daysOverflow = trunc(hour / 24)
@@ -840,11 +826,11 @@ export class Time {
     time.month -= 12 * yearsOverflow
 
     // Now take care of the days (and adjust month if needed)
-    day = time.day + aExtraDays + daysOverflow
+    let day = time.day + aExtraDays + daysOverflow
 
     if (day > 0) {
-      for (;;) {
-        daysInMonth = Time.daysInMonth(time.month, time.year)
+      while (true) {
+        const daysInMonth = Time.daysInMonth(time.month, time.year)
         if (day <= daysInMonth) {
           break
         }
@@ -1289,7 +1275,7 @@ export class Time {
         if (attr === 'isDate' && val && !this._time.isDate) {
           this.adjust(0, 0, 0, 0)
         }
-        this._cachedUnixTime = null
+        this._cachedUnixTime = undefined
         this._pendingNormalization = true
         this._time[attr] = val
         return val

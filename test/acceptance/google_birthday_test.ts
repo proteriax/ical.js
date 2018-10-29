@@ -1,14 +1,16 @@
-import * as ICAL from '../ical'
+import { getICAL } from '../ical'
 import { expect } from 'chai'
 import { defineSample } from '../helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('google birthday events', async () => {
   const icsData = await defineSample('google_birthday.ics')
 
   it('expands malformatted recurring event', (done) => {
     // just verify it can parse forced types
-    const parser = new ICAL.ComponentParser()
+    const parser = ICAL.ComponentParser()
     let primary: ical.Event
     const exceptions: ical.Event[] = []
 
@@ -18,16 +20,16 @@ describe('google birthday events', async () => {
       new Date(2014, 11, 10)
     ]
 
-    parser.onevent = function (event) {
+    parser.on('event', (event) => {
       if (event.isRecurrenceException()) {
         exceptions.push(event)
       } else {
         primary = event
       }
-    }
+    })
 
-    parser.oncomplete = function () {
-      exceptions.forEach(function (item) {
+    parser.on('complete', () => {
+      exceptions.forEach((item) => {
         primary.relateException(item)
       })
 
@@ -39,7 +41,7 @@ describe('google birthday events', async () => {
       }
       expect(dates).to.deep.equal(expectedDates)
       done()
-    }
+    })
 
     parser.process(icsData)
   })

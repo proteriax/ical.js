@@ -3,6 +3,8 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var events = require('events');
+
 class Binary {
   constructor(aValue) {
     this.icaltype = 'binary';
@@ -153,16 +155,16 @@ exports.WeekDay = {
 };
 class Time {
   constructor(data, zone) {
+    this._time = Object.create(null);
+    this.year = 0;
+    this.month = 1;
+    this.day = 1;
+    this.hour = 0;
+    this.minute = 0;
+    this.second = 0;
+    this.isDate = false;
     this._cachedUnixTime = 0;
     this._pendingNormalization = false;
-    const time = this._time = Object.create(null);
-    time.year = 0;
-    time.month = 1;
-    time.day = 1;
-    time.hour = 0;
-    time.minute = 0;
-    time.second = 0;
-    time.isDate = false;
     this.fromData(data, zone);
   }
 
@@ -568,34 +570,30 @@ class Time {
   }
 
   adjust(aExtraDays, aExtraHours, aExtraMinutes, aExtraSeconds, aTime = this._time) {
-    let minutesOverflow,
-        hoursOverflow,
-        daysOverflow = 0,
+    let daysOverflow = 0,
         yearsOverflow = 0;
-    let second, minute, hour, day;
-    let daysInMonth;
     const time = aTime || this._time;
 
     if (!time.isDate) {
-      second = time.second + aExtraSeconds;
+      const second = time.second + aExtraSeconds;
       time.second = second % 60;
-      minutesOverflow = trunc(second / 60);
+      let minutesOverflow = trunc(second / 60);
 
       if (time.second < 0) {
         time.second += 60;
         minutesOverflow--;
       }
 
-      minute = time.minute + aExtraMinutes + minutesOverflow;
+      const minute = time.minute + aExtraMinutes + minutesOverflow;
       time.minute = minute % 60;
-      hoursOverflow = trunc(minute / 60);
+      let hoursOverflow = trunc(minute / 60);
 
       if (time.minute < 0) {
         time.minute += 60;
         hoursOverflow--;
       }
 
-      hour = time.hour + aExtraHours + hoursOverflow;
+      const hour = time.hour + aExtraHours + hoursOverflow;
       time.hour = hour % 24;
       daysOverflow = trunc(hour / 24);
 
@@ -613,11 +611,11 @@ class Time {
 
     time.year += yearsOverflow;
     time.month -= 12 * yearsOverflow;
-    day = time.day + aExtraDays + daysOverflow;
+    let day = time.day + aExtraDays + daysOverflow;
 
     if (day > 0) {
-      for (;;) {
-        daysInMonth = Time.daysInMonth(time.month, time.year);
+      while (true) {
+        const daysInMonth = Time.daysInMonth(time.month, time.year);
 
         if (day <= daysInMonth) {
           break;
@@ -897,7 +895,7 @@ __decorate([memoize], Time, "epochTime", null);
           this.adjust(0, 0, 0, 0);
         }
 
-        this._cachedUnixTime = null;
+        this._cachedUnixTime = undefined;
         this._pendingNormalization = true;
         this._time[attr] = val;
         return val;
@@ -1453,7 +1451,7 @@ class Timezone {
 
   _expandComponent(aComponent, aYear, changes) {
     if (!aComponent.hasProperty('dtstart') || !aComponent.hasProperty('tzoffsetto') || !aComponent.hasProperty('tzoffsetfrom')) {
-      return null;
+      return;
     }
 
     const dtstart = aComponent.getFirstProperty('dtstart').getFirstValue();
@@ -1578,7 +1576,6 @@ class Timezone {
     tt.adjust(0, 0, 0, -utcOffset);
     utcOffset = to_zone.utcOffset(tt);
     tt.adjust(0, 0, 0, utcOffset);
-    return null;
   }
 
   static fromData(aData) {
@@ -1644,6 +1641,7 @@ function remove(tzid) {
 }
 
 var TimezoneService = /*#__PURE__*/Object.freeze({
+  zones: zones,
   reset: reset,
   has: has,
   get: get,
@@ -1651,7 +1649,10 @@ var TimezoneService = /*#__PURE__*/Object.freeze({
   remove: remove
 });
 
-const foldLength = 75;
+exports.foldLength = 75;
+function setFoldLength(length) {
+  exports.foldLength = length;
+}
 const newLineChar = '\r\n';
 function updateTimezones(vcal) {
   let allsubs, properties, vtimezones, reqTzid, i, tzid;
@@ -1772,8 +1773,8 @@ function foldline(line = '') {
   let result = '';
 
   while (line.length) {
-    result += newLineChar + ' ' + line.substr(0, foldLength);
-    line = line.substr(foldLength);
+    result += newLineChar + ' ' + line.substr(0, exports.foldLength);
+    line = line.substr(exports.foldLength);
   }
 
   return result.substr(newLineChar.length + 1);
@@ -1805,7 +1806,8 @@ function trunc(num) {
 }
 
 var helpers = /*#__PURE__*/Object.freeze({
-  foldLength: foldLength,
+  get foldLength () { return exports.foldLength; },
+  setFoldLength: setFoldLength,
   newLineChar: newLineChar,
   updateTimezones: updateTimezones,
   strictParseInt: strictParseInt,
@@ -2131,12 +2133,12 @@ class VCardTime extends Time {
     const h = this.hour,
           mm = this.minute,
           s = this.second;
-    const hasYear = y !== null,
-          hasMonth = m !== null,
-          hasDay = d !== null;
-    const hasHour = h !== null,
-          hasMinute = mm !== null,
-          hasSecond = s !== null;
+    const hasYear = y != null,
+          hasMonth = m != null,
+          hasDay = d != null;
+    const hasHour = h != null,
+          hasMinute = mm != null,
+          hasSecond = s != null;
     const datepart = (hasYear ? p2(y) + (hasMonth || hasDay ? '-' : '') : hasMonth || hasDay ? '--' : '') + (hasMonth ? p2(m) : '') + (hasDay ? '-' + p2(d) : '');
     const timepart = (hasHour ? p2(h) : '-') + (hasHour && hasMinute ? ':' : '') + (hasMinute ? p2(mm) : '') + (!hasHour && !hasMinute ? '-' : '') + (hasMinute && hasSecond ? ':' : '') + (hasSecond ? p2(s) : '');
     let zone;
@@ -2240,10 +2242,14 @@ class Period {
   }
 
   clone() {
-    return Period.fromData({
-      start: this.start && this.start.clone(),
+    const period = Period.fromData(Object.assign({
+      start: this.start && this.start.clone()
+    }, this.duration ? {
+      duration: this.duration.clone()
+    } : {
       end: this.end && this.end.clone()
-    });
+    }));
+    return period;
   }
 
   getDuration() {
@@ -2496,11 +2502,11 @@ class RecurIterator {
   }
 
   next() {
-    const before = this.last ? this.last.clone() : null;
+    const before = this.last ? this.last.clone() : undefined;
 
     if (this.rule.count && this.occurrence_number >= this.rule.count || this.rule.until && this.last.compare(this.rule.until) > 0) {
       this.completed = true;
-      return null;
+      return;
     }
 
     if (this.occurrence_number === 0 && this.last.compare(this.dtstart) >= 0) {
@@ -2543,7 +2549,7 @@ class RecurIterator {
           break;
 
         default:
-          return null;
+          return;
       }
     } while (!this.check_contracting_rules() || this.last.compare(this.dtstart) < 0 || !valid);
 
@@ -2553,7 +2559,7 @@ class RecurIterator {
 
     if (this.rule.until && this.last.compare(this.rule.until) > 0) {
       this.completed = true;
-      return null;
+      return;
     } else {
       this.occurrence_number++;
       return this.last;
@@ -4748,7 +4754,7 @@ stringify.property = function (property, designSet, noFold) {
   }
 
   let propDetails;
-  let multiValue = null;
+  let multiValue;
   let structuredValue = '';
   let isDefault = false;
 
@@ -4845,30 +4851,32 @@ const RFC6868_REPLACE_MAP$1 = {
   '^': '^^'
 };
 
-const NAME_INDEX = 0;
-const PROP_INDEX = 1;
-const TYPE_INDEX = 2;
-const VALUE_INDEX = 3;
+var Index = {
+  Name: 0,
+  Prop: 1,
+  Type: 2,
+  Value: 3
+};
 class Property {
   constructor(jCal, parent) {
     this._parent = parent;
 
     if (typeof jCal === 'string') {
       this.jCal = [jCal, {}, design.defaultType];
-      this.jCal[TYPE_INDEX] = this.getDefaultType();
+      this.jCal[Index.Type] = this.getDefaultType();
     } else {
-      this.jCal = jCal;
+      this.jCal = [...jCal];
     }
 
     this._updateType();
   }
 
   get type() {
-    return this.jCal[TYPE_INDEX];
+    return this.jCal[Index.Type];
   }
 
   get name() {
-    return this.jCal[NAME_INDEX];
+    return this.jCal[Index.Name];
   }
 
   get parent() {
@@ -4880,7 +4888,7 @@ class Property {
     this._parent = p;
 
     if (this.type === design.defaultType && designSetChanged) {
-      this.jCal[TYPE_INDEX] = this.getDefaultType();
+      this.jCal[Index.Type] = this.getDefaultType();
 
       this._updateType();
     }
@@ -4912,8 +4920,8 @@ class Property {
       return this._values[index];
     }
 
-    if (this.jCal.length <= VALUE_INDEX + index) {
-      return null;
+    if (this.jCal.length <= Index.Value + index) {
+      return;
     }
 
     if (this.isDecorated) {
@@ -4921,10 +4929,10 @@ class Property {
         this._values = [];
       }
 
-      this._values[index] = this._decorate(this.jCal[VALUE_INDEX + index]);
+      this._values[index] = this._decorate(this.jCal[Index.Value + index]);
       return this._values[index];
     } else {
-      return this.jCal[VALUE_INDEX + index];
+      return this.jCal[Index.Value + index];
     }
   }
 
@@ -4942,17 +4950,17 @@ class Property {
     }
 
     if (typeof value === 'object' && 'icaltype' in value) {
-      this.jCal[VALUE_INDEX + index] = this._undecorate(value);
+      this.jCal[Index.Value + index] = this._undecorate(value);
       this._values[index] = value;
     } else {
-      this.jCal[VALUE_INDEX + index] = value;
+      this.jCal[Index.Value + index] = value;
       this._values[index] = this._decorate(value);
     }
   }
 
   getParameter(name) {
-    if (name in this.jCal[PROP_INDEX]) {
-      return this.jCal[PROP_INDEX][name];
+    if (name in this.jCal[Index.Prop]) {
+      return this.jCal[Index.Prop][name];
     }
   }
 
@@ -4973,15 +4981,15 @@ class Property {
       value = [value];
     }
 
-    this.jCal[PROP_INDEX][name] = value;
+    this.jCal[Index.Prop][name] = value;
   }
 
   removeParameter(name) {
-    delete this.jCal[PROP_INDEX][name];
+    delete this.jCal[Index.Prop][name];
   }
 
   getDefaultType() {
-    const name = this.jCal[NAME_INDEX];
+    const name = this.jCal[Index.Name];
     const designSet = this._designSet;
 
     if (name in designSet.property) {
@@ -4997,7 +5005,7 @@ class Property {
 
   resetType(type) {
     this.removeAllValues();
-    this.jCal[TYPE_INDEX] = type;
+    this.jCal[Index.Type] = type;
 
     this._updateType();
   }
@@ -5007,7 +5015,7 @@ class Property {
   }
 
   getValues() {
-    const len = this.jCal.length - VALUE_INDEX;
+    const len = this.jCal.length - Index.Value;
 
     if (len < 1) {
       return [];
@@ -5050,7 +5058,7 @@ class Property {
       }
     } else {
       for (; i < len; i++) {
-        this.jCal[VALUE_INDEX + i] = values[i];
+        this.jCal[Index.Value + i] = values[i];
       }
     }
   }
@@ -5065,7 +5073,7 @@ class Property {
     if (this.isDecorated) {
       this._setDecoratedValue(value, 0);
     } else {
-      this.jCal[VALUE_INDEX] = value;
+      this.jCal[Index.Value] = value;
     }
   }
 
@@ -5085,9 +5093,11 @@ class Property {
 
 const PROPERTY_INDEX = 1;
 const COMPONENT_INDEX = 2;
-const NAME_INDEX$1 = 0;
+const NAME_INDEX = 0;
 class Component {
   constructor(jCal, parent) {
+    this._components = [];
+    this._properties = [];
     this._hydratedPropertyCount = 0;
     this._hydratedComponentCount = 0;
 
@@ -5096,11 +5106,11 @@ class Component {
     }
 
     this.jCal = jCal;
-    this.parent = parent || null;
+    this.parent = parent;
   }
 
   get name() {
-    return this.jCal[NAME_INDEX$1];
+    return this.jCal[NAME_INDEX];
   }
 
   get _designSet() {
@@ -5124,11 +5134,6 @@ class Component {
   }
 
   _hydrateProperty(index) {
-    if (!this._properties) {
-      this._properties = [];
-      this._hydratedPropertyCount = 0;
-    }
-
     if (this._properties[index]) {
       return this._properties[index];
     }
@@ -5140,15 +5145,11 @@ class Component {
 
   getFirstSubcomponent(name) {
     if (name) {
-      let i = 0;
       const comps = this.jCal[COMPONENT_INDEX];
-      const len = comps.length;
 
-      for (; i < len; i++) {
-        if (comps[i][NAME_INDEX$1] === name) {
-          const result = this._hydrateComponent(i);
-
-          return result;
+      for (let i = 0; i < comps.length; i++) {
+        if (comps[i][NAME_INDEX] === name) {
+          return this._hydrateComponent(i);
         }
       }
     } else {
@@ -5160,14 +5161,13 @@ class Component {
 
   getAllSubcomponents(name) {
     const jCalLen = this.jCal[COMPONENT_INDEX].length;
-    let i = 0;
 
     if (name) {
       const comps = this.jCal[COMPONENT_INDEX];
       const result = [];
 
-      for (; i < jCalLen; i++) {
-        if (name === comps[i][NAME_INDEX$1]) {
+      for (let i = 0; i < jCalLen; i++) {
+        if (name === comps[i][NAME_INDEX]) {
           result.push(this._hydrateComponent(i));
         }
       }
@@ -5175,22 +5175,20 @@ class Component {
       return result;
     } else {
       if (!this._components || this._hydratedComponentCount !== jCalLen) {
-        for (; i < jCalLen; i++) {
+        for (let i = 0; i < jCalLen; i++) {
           this._hydrateComponent(i);
         }
       }
 
-      return this._components || [];
+      return this._components;
     }
   }
 
   hasProperty(name) {
     const props = this.jCal[PROPERTY_INDEX];
-    const len = props.length;
-    let i = 0;
 
-    for (; i < len; i++) {
-      if (props[i][NAME_INDEX$1] === name) {
+    for (let i = 0; i < props.length; i++) {
+      if (props[i][NAME_INDEX] === name) {
         return true;
       }
     }
@@ -5200,15 +5198,11 @@ class Component {
 
   getFirstProperty(name) {
     if (name) {
-      let i = 0;
       const props = this.jCal[PROPERTY_INDEX];
-      const len = props.length;
 
-      for (; i < len; i++) {
-        if (props[i][NAME_INDEX$1] === name) {
-          const result = this._hydrateProperty(i);
-
-          return result;
+      for (let i = 0; i < props.length; i++) {
+        if (props[i][NAME_INDEX] === name) {
+          return this._hydrateProperty(i);
         }
       }
     } else {
@@ -5224,20 +5218,17 @@ class Component {
     if (prop) {
       return prop.getFirstValue();
     }
-
-    return null;
   }
 
   getAllProperties(name) {
     const jCalLen = this.jCal[PROPERTY_INDEX].length;
-    let i = 0;
 
     if (name) {
       const props = this.jCal[PROPERTY_INDEX];
       const result = [];
 
-      for (; i < jCalLen; i++) {
-        if (name === props[i][NAME_INDEX$1]) {
+      for (let i = 0; i < jCalLen; i++) {
+        if (name === props[i][NAME_INDEX]) {
           result.push(this._hydrateProperty(i));
         }
       }
@@ -5245,12 +5236,12 @@ class Component {
       return result;
     } else {
       if (!this._properties || this._hydratedPropertyCount !== jCalLen) {
-        for (; i < jCalLen; i++) {
+        for (let i = 0; i < jCalLen; i++) {
           this._hydrateProperty(i);
         }
       }
 
-      return this._properties || [];
+      return this._properties;
     }
   }
 
@@ -5259,7 +5250,7 @@ class Component {
       const obj = cache[index];
 
       if ('parent' in obj) {
-        obj['parent'] = null;
+        obj.parent = undefined;
       }
     }
 
@@ -5268,21 +5259,19 @@ class Component {
   }
 
   _removeObject(jCalIndex, cache, nameOrObject) {
-    let i = 0;
     const objects = this.jCal[jCalIndex];
-    const len = objects.length;
     const cached = this[cache];
 
     if (typeof nameOrObject === 'string') {
-      for (; i < len; i++) {
-        if (objects[i][NAME_INDEX$1] === nameOrObject) {
+      for (let i = 0; i < objects.length; i++) {
+        if (objects[i][NAME_INDEX] === nameOrObject) {
           this._removeObjectByIndex(jCalIndex, cached, i);
 
           return true;
         }
       }
     } else if (cached) {
-      for (; i < len; i++) {
+      for (let i = 0; i < objects.length; i++) {
         if (cached[i] && cached[i] === nameOrObject) {
           this._removeObjectByIndex(jCalIndex, cached, i);
 
@@ -5297,11 +5286,10 @@ class Component {
   _removeAllObjects(jCalIndex, cache, name) {
     const cached = this[cache];
     const objects = this.jCal[jCalIndex];
-    let i = objects.length - 1;
     let removed = false;
 
-    for (; i >= 0; i--) {
-      if (!name || objects[i][NAME_INDEX$1] === name) {
+    for (let i = objects.length - 1; i >= 0; i--) {
+      if (!name || objects[i][NAME_INDEX] === name) {
         this._removeObjectByIndex(jCalIndex, cached, i);
 
         removed = true;
@@ -5347,7 +5335,7 @@ class Component {
 
   addProperty(property) {
     if (!(property instanceof Property)) {
-      throw new TypeError('must instance of ICAL.Property');
+      throw TypeError('must instance of ICAL.Property');
     }
 
     if (!this._properties) {
@@ -5627,7 +5615,7 @@ class RecurExpansion {
     const iters = this.ruleIterators;
 
     if (iters.length === 0) {
-      return null;
+      return;
     }
 
     let len = iters.length;
@@ -5726,7 +5714,7 @@ class Event {
 
   findRangeException(time) {
     if (!this.rangeExceptions.length) {
-      return null;
+      return;
     }
 
     const utc = time.toUnixTime();
@@ -5985,23 +5973,13 @@ function compareRangeException(a, b) {
   return 0;
 }
 
-class ComponentParser {
-  constructor(options = {}) {
-    this.parseEvent = true;
-    this.parseTimezone = true;
+function ComponentParser({
+  parseEvent = true,
+  parseTimezone = true
+} = {}) {
+  const ee = new events.EventEmitter();
 
-    this.oncomplete = () => {};
-
-    this.onerror = () => {};
-
-    this.ontimezone = () => {};
-
-    this.onevent = () => {};
-
-    Object.assign(this, options);
-  }
-
-  process(ical) {
+  ee.process = async function process(ical) {
     if (typeof ical === 'string') {
       ical = parse(ical);
     }
@@ -6010,21 +5988,14 @@ class ComponentParser {
       ical = new Component(ical);
     }
 
-    const components = ical.getAllSubcomponents();
-    let i = 0;
-    const len = components.length;
-    let component;
-
-    for (; i < len; i++) {
-      component = components[i];
-
+    for (const component of ical.getAllSubcomponents()) {
       switch (component.name) {
         case 'vtimezone':
-          if (this.parseTimezone) {
+          if (parseTimezone) {
             const tzid = component.getFirstPropertyValue('tzid');
 
             if (tzid) {
-              this.ontimezone(new Timezone({
+              ee.emit('timezone', new Timezone({
                 tzid,
                 component
               }));
@@ -6034,8 +6005,8 @@ class ComponentParser {
           break;
 
         case 'vevent':
-          if (this.parseEvent) {
-            this.onevent(new Event(component));
+          if (parseEvent) {
+            ee.emit('event', new Event(component));
           }
 
           break;
@@ -6045,9 +6016,11 @@ class ComponentParser {
       }
     }
 
-    this.oncomplete();
-  }
+    await 0;
+    ee.emit('complete');
+  };
 
+  return ee;
 }
 
 reset();
@@ -6071,5 +6044,5 @@ exports.Time = Time;
 exports.Timezone = Timezone;
 exports.UtcOffset = UtcOffset;
 exports.VCardTime = VCardTime;
-exports.foldLength = foldLength;
 exports.newLineChar = newLineChar;
+exports.setFoldLength = setFoldLength;

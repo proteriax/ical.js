@@ -1,10 +1,11 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
+const ICAL = getICAL()
+
 describe('ICAL.Binary', () => {
   const subject = new ICAL.Binary()
-
   it('sets encoded value', () => {
     subject.setEncodedValue('bananas')
     expect(subject.decodeValue()).to.equal('bananas')

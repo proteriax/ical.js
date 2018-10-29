@@ -56,24 +56,22 @@ export class Period {
   /**
    * The start of the period
    */
-  start: Time
+  readonly start: Time
 
   /**
    * The end of the period
    */
-  end: Time
+  readonly end: Time
 
   /**
    * The duration of the period
    */
-  duration: Duration
+  readonly duration: Duration
 
   /**
    * The type name, to be used in the jCal object.
-   * @constant
-   * @default "period"
    */
-  icaltype: string = 'period'
+  readonly icaltype: string = 'period'
 
   /**
    * Returns a clone of the duration object.
@@ -81,10 +79,15 @@ export class Period {
    * @return The cloned object
    */
   clone(): Period {
-    return Period.fromData({
+    const period = Period.fromData({
       start: this.start && this.start.clone(),
-      end: this.end && this.end.clone(),
+      ...this.duration ? {
+        duration: this.duration.clone(),
+      } : {
+        end: this.end && this.end.clone(),
+      },
     })
+    return period
   }
 
   /**

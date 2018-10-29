@@ -62,7 +62,7 @@ function setupHandlers(binPath: string) {
         clearTimeout(ptimer)
       }
 
-      if (code === null) {
+      if (code == null) {
         callback('Maximum execution time exceeded')
       } else if (code !== 0) {
         callback('Execution error: ' + code)

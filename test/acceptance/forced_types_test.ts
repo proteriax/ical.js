@@ -1,7 +1,9 @@
-import * as ICAL from '../ical.js'
+import { getICAL } from '../ical'
 import { expect } from 'chai'
 import { defineSample } from '../helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('ics test', async () => {
   const icsData = await defineSample('forced_types.ics')

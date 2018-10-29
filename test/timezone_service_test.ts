@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample } from './helper'
 import { describe, it, beforeEach } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('timezone_service', async () => {
   const icsData = await defineSample('timezones/America/Los_Angeles.ics')

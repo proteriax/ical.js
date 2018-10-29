@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import { load } from './helper'
+
+const ICAL = getICAL()
 
 describe('parserv2', () => {
   const subject = ICAL.parse

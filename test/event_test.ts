@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample, useTimezones } from './helper'
-import { describe, it } from 'mocha'
+import { describe, it, beforeEach } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('ICAL.Event', async () => {
 
@@ -10,69 +12,61 @@ describe('ICAL.Event', async () => {
 
   const icsData = await defineSample('recur_instances.ics')
 
-  function rangeException(nth) {
+  function rangeException(subject: ical.Event, nth: number) {
     if (!nth || nth <= 0) {
       nth = 1
     }
 
     const iter = subject.iterator()
-    let last
+    let last: ical.Time
 
     while (nth--) {
       last = iter.next()
     }
 
     const newEvent = new ICAL.Event()
-
     newEvent.uid = subject.uid
-
     newEvent.component
-      .addPropertyWithValue(
-        'recurrence-id',
-        last
-      ).setParameter(
-        'range',
-        subject.THISANDFUTURE)
+      .addPropertyWithValue('recurrence-id', last!)
+      .setParameter('range', subject.THISANDFUTURE)
 
     return newEvent
   }
 
-  const exceptions: ical.Component[] = []
-  let subject
-  let primaryItem
+  let exceptions: ical.Component[]
+  let primaryItem: ical.Component
 
-  exceptions.length = 0
+  function flush() {
+    exceptions = []
+    const root = new ICAL.Component(ICAL.parse(icsData))
 
-  const root = new ICAL.Component(ICAL.parse(icsData))
+    const events = root.getAllSubcomponents('vevent')
+    ICAL.TimezoneService.register(root.getFirstSubcomponent('vtimezone')!)
 
-  const events = root.getAllSubcomponents('vevent')
-  ICAL.TimezoneService.register(root.getFirstSubcomponent('vtimezone')!)
-
-  events.forEach((event) => {
-    if (!event.hasProperty('recurrence-id')) {
-      primaryItem = event
-    } else {
-      exceptions.push(event)
-    }
-  })
-
-  subject = new ICAL.Event(primaryItem)
+    events.forEach((event) => {
+      if (!event.hasProperty('recurrence-id')) {
+        primaryItem = event
+      } else {
+        exceptions.push(event)
+      }
+    })
+  }
+  beforeEach(flush)
 
   describe('changing timezones', () => {
-
     const dateFields = [
       ['startDate', 'dtstart'],
       ['endDate', 'dtend']
     ]
 
-    function verifyTzidHandling(eventProp, icalProp) {
-      let time
-      const property = subject.component.getFirstProperty(icalProp)
+    function verifyTzidHandling(this: void, eventProp: string, icalProp: string) {
+      const subject = new ICAL.Event(primaryItem!)
+      const property = subject.component.getFirstProperty(icalProp)!
       expect(property.getParameter('tzid'), 'has tzid')
       expect(property.getParameter('tzid') === testTzid).to.be.false
 
-      it('to floating time', function () {
-        subject[eventProp] = time = new ICAL.Time({
+      it('to floating time', () => {
+        const time = subject[eventProp] = new ICAL.Time({
           year: 2012,
           month: 1,
           day: 1,
@@ -90,7 +84,7 @@ describe('ICAL.Event', async () => {
       })
 
       it('to utc time', () => {
-        subject[eventProp] = time = new ICAL.Time({
+        const time = subject[eventProp] = new ICAL.Time({
           year: 2013,
           month: 1,
           day: 1,
@@ -112,7 +106,7 @@ describe('ICAL.Event', async () => {
       })
 
       it('to another timezone', () => {
-        subject[eventProp] = time = new ICAL.Time({
+        const time = subject[eventProp] = new ICAL.Time({
           year: 2013,
           month: 1,
           day: 1,
@@ -134,7 +128,7 @@ describe('ICAL.Event', async () => {
         // ensure we are in the right time type
         property.resetType('date-time')
 
-        subject[eventProp] = time = new ICAL.Time({
+        const time = subject[eventProp] = new ICAL.Time({
           year: 2013,
           month: 1,
           day: 1,
@@ -154,7 +148,7 @@ describe('ICAL.Event', async () => {
         // ensure we are in the right time type
         property.resetType('date')
 
-        subject[eventProp] = time = new ICAL.Time({
+        const time = subject[eventProp] = new ICAL.Time({
           year: 2013,
           month: 1,
           day: 1,
@@ -172,23 +166,21 @@ describe('ICAL.Event', async () => {
       })
     }
 
-    dateFields.forEach(function (field) {
-      describe(
-        field[0],
-        verifyTzidHandling.bind(this, field[0], field[1])
-      )
+    dateFields.forEach(([eventProp, icalProp]) => {
+      describe(eventProp, () => verifyTzidHandling(eventProp, icalProp))
     })
-
   })
 
-  describe('initializer', function () {
-    it('only with component', function () {
+  describe('initializer', () => {
+    const subject = new ICAL.Event(primaryItem!)
+
+    it('only with component', () => {
       expect(subject.component).to.equal(primaryItem)
       expect(subject.rangeExceptions).to.be.an('array')
     })
 
-    it('with exceptions from the component\'s parent if not specified in options', function () {
-      subject = new ICAL.Event(primaryItem)
+    it('with exceptions from the component\'s parent if not specified in options', () => {
+      const subject = new ICAL.Event(primaryItem)
 
       const expected = Object.create(null)
       exceptions.forEach((exception) => {
@@ -199,7 +191,7 @@ describe('ICAL.Event', async () => {
     })
 
     it('with exceptions specified in options if any', () => {
-      subject = new ICAL.Event(primaryItem, {
+      const subject = new ICAL.Event(primaryItem, {
         exceptions: exceptions.slice(1)
       })
 
@@ -212,7 +204,7 @@ describe('ICAL.Event', async () => {
     })
 
     it('with strict exceptions', () => {
-      subject = new ICAL.Event(primaryItem, {
+      const subject = new ICAL.Event(primaryItem, {
         strictExceptions: true
       })
       expect(subject.strictExceptions)
@@ -253,14 +245,14 @@ describe('ICAL.Event', async () => {
         })
       }
 
-      it('setters', function () {
+      it('setters', () => {
         for (const key in props) {
           subject[key] = props[key]
           expect(subject[key]).to.equal(props[key], key)
         }
       })
 
-      it('to string roundtrip', function () {
+      it('to string roundtrip', () => {
         const aComp = new ICAL.Component(ICAL.parse(icsData))
         const aEvent = new ICAL.Event(aComp)
 
@@ -275,12 +267,13 @@ describe('ICAL.Event', async () => {
 
   })
 
-  describe('#getOccurrenceDetails', function () {
+  describe('#getOccurrenceDetails', () => {
+    const subject = new ICAL.Event(primaryItem!)
     exceptions.forEach(subject.relateException, subject)
 
-    describe('RANGE=THISANDFUTURE', function () {
-      it('starts earlier ends later', function () {
-        const exception = rangeException(1)
+    describe('RANGE=THISANDFUTURE', () => {
+      it('starts earlier ends later', () => {
+        const exception = rangeException(subject, 1)
         const rid = exception.recurrenceId
         rid.clone()
 
@@ -426,7 +419,7 @@ describe('ICAL.Event', async () => {
   })
 
   describe('#recurrenceTypes', function () {
-
+    const subject = new ICAL.Event(primaryItem!)
     describe('multiple rrules', async function () {
       const icsData = await defineSample('multiple_rrules.ics')
 
@@ -443,23 +436,24 @@ describe('ICAL.Event', async () => {
       })
     })
 
-    it('no rrule', function () {
+    it('no rrule', () => {
       subject.component.removeProperty('rrule')
       expect(subject.getRecurrenceTypes()).to.be.empty
     })
   })
 
-  describe('#relateException', function () {
+  describe('#relateException', () => {
+    const subject = new ICAL.Event(primaryItem!)
 
-    it('trying to relate an exception to an exception', function () {
+    it('trying to relate an exception to an exception', () => {
       const exception = new ICAL.Event(exceptions[0])
 
-      expect(function () {
+      expect(() => {
         exception.relateException(exceptions[1])
       }).to.throw()
     })
 
-    it('trying to relate unrelated component (without strict)', function () {
+    it('trying to relate unrelated component (without strict)', () => {
       const exception = exceptions[0]
       const prop = exception.getFirstProperty('uid')!
       prop.setValue('foo')
@@ -467,7 +461,7 @@ describe('ICAL.Event', async () => {
       subject.relateException(exception)
     })
 
-    it('trying to relate unrelated component (with strict)', function () {
+    it('trying to relate unrelated component (with strict)', () => {
       const exception = exceptions[0]
       const prop = exception.getFirstProperty('uid')!
       prop.setValue('foo')
@@ -479,7 +473,7 @@ describe('ICAL.Event', async () => {
     })
 
     it('from ical component', function () {
-      subject = new ICAL.Event(primaryItem, { exceptions: [] })
+      const subject = new ICAL.Event(primaryItem, { exceptions: [] })
       const exception = exceptions[0]
       subject.relateException(exception)
 
@@ -490,7 +484,7 @@ describe('ICAL.Event', async () => {
       expect(subject.rangeExceptions, 'does not add range').to.be.empty
     })
 
-    describe('with RANGE=THISANDFUTURE', function () {
+    describe('with RANGE=THISANDFUTURE', () => {
       function exceptionTime(index: number, mod = 0) {
         const item = subject.rangeExceptions[index]
         const utc = item[0]
@@ -501,9 +495,9 @@ describe('ICAL.Event', async () => {
       }
 
       const list = [
-        rangeException(3),
-        rangeException(10),
-        rangeException(1)
+        rangeException(subject, 3),
+        rangeException(subject, 10),
+        rangeException(subject, 1)
       ]
 
       list.forEach(subject.relateException.bind(subject))
@@ -572,6 +566,7 @@ describe('ICAL.Event', async () => {
   })
 
   describe('#isRecurring', function () {
+    const subject = new ICAL.Event(primaryItem!)
     it('when is primary recurring item', function () {
       expect(subject.isRecurring()).is.true
     })
@@ -582,14 +577,14 @@ describe('ICAL.Event', async () => {
     })
   })
 
-  describe('#modifiesFuture', function () {
-
-    it('without range or exception', function () {
+  describe('#modifiesFuture', () => {
+    const subject = new ICAL.Event(primaryItem!)
+    it('without range or exception', () => {
       expect(subject.isRecurrenceException()).is.false
       expect(subject.modifiesFuture()).is.false
     })
 
-    it('with range and exception', function () {
+    it('with range and exception', () => {
       subject.component
         .addPropertyWithValue(
           'recurrence-id',
@@ -602,18 +597,21 @@ describe('ICAL.Event', async () => {
     })
   })
 
-  describe('#isRecurrenceException', function () {
-    it('when is primary recurring item', function () {
+  describe('#isRecurrenceException', () => {
+    const subject = new ICAL.Event(primaryItem!)
+    it('when is primary recurring item', () => {
       expect(subject.isRecurrenceException()).is.false
     })
 
-    it('when is exception', function () {
+    it('when is exception', () => {
       const subject = new ICAL.Event(exceptions[0])
       expect(subject.isRecurrenceException()).is.true
     })
   })
 
-  describe('date props', function () {
+  describe('date props', () => {
+    const subject = new ICAL.Event(primaryItem!);
+
     [
       ['dtstart', 'startDate'],
       ['dtend', 'endDate']
@@ -696,6 +694,7 @@ describe('ICAL.Event', async () => {
   })
 
   describe('remaining properties', function () {
+    const subject = new ICAL.Event(primaryItem!)
     function testProperty(prop, changeval) {
       it('#' + prop, function () {
         const expected = primaryItem.getFirstPropertyValue(prop)
@@ -737,11 +736,12 @@ describe('ICAL.Event', async () => {
     })
   })
 
-  describe('#iterator', function () {
-    it('with start time', function () {
+  describe('#iterator', () => {
+    const subject = new ICAL.Event(primaryItem!)
+    it('with start time', () => {
       const start = subject.startDate
       const time = new ICAL.Time({
-        day: start.da + 1,
+        day: start.day + 1,
         month: start.month,
         year: start.year
       })

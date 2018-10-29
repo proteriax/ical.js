@@ -1,7 +1,9 @@
-import * as ICAL from '../ical'
+import { getICAL } from '../ical'
 import { expect } from 'chai'
 import { defineSample } from '../helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('ics - negative zero', async () => {
   const icsData = await defineSample('utc_negative_zero.ics')

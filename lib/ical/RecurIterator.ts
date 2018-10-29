@@ -306,10 +306,9 @@ export class RecurIterator {
 
   /**
    * Retrieve the next occurrence from the iterator.
-   * @return {Time}
    */
-  next() {
-    const before = (this.last ? this.last.clone() : null)
+  next(): Time | undefined {
+    const before = (this.last ? this.last.clone() : undefined)
 
     if ((this.rule.count && this.occurrence_number >= this.rule.count) ||
         (this.rule.until && this.last.compare(this.rule.until) > 0)) {
@@ -318,7 +317,7 @@ export class RecurIterator {
       //     we can simplify the above case to check for completed later.
       this.completed = true
 
-      return null
+      return
     }
 
     if (this.occurrence_number === 0 && this.last.compare(this.dtstart) >= 0) {
@@ -356,7 +355,7 @@ export class RecurIterator {
         break
 
       default:
-        return null
+        return
       }
     } while (!this.check_contracting_rules() ||
               this.last.compare(this.dtstart) < 0 ||
@@ -370,7 +369,7 @@ export class RecurIterator {
 
     if (this.rule.until && this.last.compare(this.rule.until) > 0) {
       this.completed = true
-      return null
+      return
     } else {
       this.occurrence_number++
       return this.last
@@ -1368,11 +1367,9 @@ export class RecurIterator {
    * Convert iterator into a serialize-able object.  Will preserve current
    * iteration sequence to ensure the seamless continuation of the recurrence
    * rule.
-   * @return {Object}
    */
   toJSON() {
     const result = Object.create(null)
-
     result.initialized = this.initialized
     result.rule = this.rule.toJSON()
     result.dtstart = this.dtstart.toJSON()

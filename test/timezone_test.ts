@@ -1,32 +1,34 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample } from './helper'
 import { describe, it } from 'mocha'
 
+const ICAL = getICAL()
+
 describe('timezone', function () {
   let icsData: string
-  let timezone: ical.Timezone
 
-  function timezoneTest(tzid: string, should: string, callback: () => void) {
+  function timezoneTest(tzid: string, should: string, callback: (timezone: ical.Timezone) => void) {
+    console.assert(tzid.length)
+    let timezone: ical.Timezone
     describe(tzid, async () => {
       if (tzid === 'UTC') {
         timezone = ICAL.Timezone.utcTimezone
       } else if (tzid === 'floating') {
         timezone = ICAL.Timezone.localTimezone
       } else {
-        icsData = await defineSample('timezones/' + tzid + '.ics')
+        icsData = await defineSample(`timezones/${tzid}.ics`)
         const parsed = ICAL.parse(icsData)
         const vcalendar = new ICAL.Component(parsed)
         const comp = vcalendar.getFirstSubcomponent('vtimezone')
-
         timezone = new ICAL.Timezone(comp)
       }
 
-      it(should, callback)
+      it(should, () => callback(timezone))
     })
   }
 
-  function utcHours(time) {
+  function utcHours(timezone: ical.Timezone, time) {
     const seconds = timezone.utcOffset(new ICAL.Time(time))
     // in hours
     return (seconds / 3600)
@@ -137,23 +139,18 @@ describe('timezone', function () {
   ]
 
   // simple format checks
-  sanityChecks.forEach(function (item) {
+  sanityChecks.forEach((item) => {
     const title = 'time: ' + JSON.stringify(item.time)
-
     describe(title, () => {
-      for (const tzid in item.offsets) {
-        timezoneTest(tzid, tzid + ' offset ' + item.offsets[tzid], function (tzid) {
-          expect(
-            utcHours(item.time)).to.equal(
-            item.offsets[tzid]
-          )
-        }.bind(this, tzid))
+      for (const tzid of Object.keys(item.offsets)) {
+        timezoneTest(tzid, tzid + ' offset ' + item.offsets[tzid], (timezone) => {
+          expect(utcHours(timezone, item.time)).to.equal(item.offsets[tzid])
+        })
       }
     })
   })
 
-  timezoneTest('America/Los_Angeles', '#expandedUntilYear', function () {
-
+  timezoneTest('America/Los_Angeles', '#expandedUntilYear', function (timezone) {
     function calcYear(yr: number) {
       return Math.max(ICAL.Timezone._minimumExpansionYear, yr) +
         ICAL.Timezone.EXTRA_COVERAGE
@@ -200,20 +197,20 @@ describe('timezone', function () {
   })
 
   describe('#convertTime', function () {
-    timezoneTest('America/Los_Angeles', 'convert date-time from utc', function () {
+    timezoneTest('America/Los_Angeles', 'convert date-time from utc', (timezone) => {
       const subject = ICAL.Time.fromString('2012-03-11T01:59:00Z')
       const subject2 = subject.convertToZone(timezone)
       expect(subject2.zone.tzid).to.equal(timezone.tzid)
       expect(subject2.toString()).to.equal('2012-03-10T17:59:00')
     })
 
-    timezoneTest('America/Los_Angeles', 'convert date from utc', function () {
+    timezoneTest('America/Los_Angeles', 'convert date from utc', (timezone) => {
       const subject = ICAL.Time.fromString('2012-03-11')
       const subject2 = subject.convertToZone(timezone)
       expect(subject2.zone.tzid).to.equal(timezone.tzid)
       expect(subject2.toString()).to.equal('2012-03-11')
     })
-    timezoneTest('America/Los_Angeles', 'convert local time to zone', function () {
+    timezoneTest('America/Los_Angeles', 'convert local time to zone', (timezone) => {
       const subject = ICAL.Time.fromString('2012-03-11T01:59:00')
       subject.zone = ICAL.Timezone.localTimezone
       expect(subject.toString()).to.equal('2012-03-11T01:59:00')
@@ -226,8 +223,8 @@ describe('timezone', function () {
     })
   })
 
-  describe('#fromData', function () {
-    timezoneTest('America/Los_Angeles', 'string component', function () {
+  describe('#fromData', () => {
+    timezoneTest('America/Los_Angeles', 'string component', (timezone) => {
       const subject = new ICAL.Timezone({
         component: timezone.component.toString(),
         tzid: 'Makebelieve/Different'
@@ -238,7 +235,7 @@ describe('timezone', function () {
       expect(subject.component.getFirstPropertyValue('tzid')).to.equal('America/Los_Angeles')
     })
 
-    timezoneTest('America/Los_Angeles', 'component in data', () => {
+    timezoneTest('America/Los_Angeles', 'component in data', (timezone) => {
       const subject = new ICAL.Timezone({
         component: timezone.component,
       })
@@ -249,8 +246,7 @@ describe('timezone', function () {
 
     timezoneTest('America/Los_Angeles', 'with strange component', () => {
       const subject = new ICAL.Timezone({ component: 123 as any })
-
-      expect(subject.component).to.be.null
+      expect(subject.component).to.not.exist
     })
   })
 
@@ -276,7 +272,7 @@ describe('timezone', function () {
   })
 
   describe('#toString', () => {
-    timezoneTest('America/Los_Angeles', 'toString', () => {
+    timezoneTest('America/Los_Angeles', 'toString', (timezone) => {
       expect(timezone.toString()).to.equal('America/Los_Angeles')
       expect(timezone.tzid).to.equal('America/Los_Angeles')
       expect(timezone.tznames).to.equal('')

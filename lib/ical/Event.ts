@@ -34,8 +34,8 @@ interface OccurrenceDetails {
  * more details.
  */
 export class Event {
-  rangeExceptions: [number, string][]
-  component: Component
+  readonly rangeExceptions: [number, string][]
+  readonly component: Component
   _rangeExceptionCache: any
 
   /**
@@ -80,19 +80,19 @@ export class Event {
     }
   }
 
-  THISANDFUTURE = 'THISANDFUTURE'
+  readonly THISANDFUTURE = 'THISANDFUTURE'
 
   /**
    * List of related event exceptions.
    *
    * @type {Event[]}
    */
-  exceptions: OccurrenceDetails[] = []
+  readonly exceptions: OccurrenceDetails[] = []
 
   /**
    * When true, will verify exceptions are related by their UUID.
    */
-  strictExceptions: boolean = false
+  readonly strictExceptions: boolean = false
 
   /**
    * Relates a given event exception to this object.  If the given component
@@ -166,7 +166,7 @@ export class Event {
    */
   findRangeException(time: Time) {
     if (!this.rangeExceptions.length) {
-      return null
+      return
     }
 
     const utc = time.toUnixTime()

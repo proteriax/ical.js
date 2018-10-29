@@ -1,21 +1,23 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample } from './helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('ICAL.helpers', () => {
 
   describe('#pad2', () => {
     const subject = ICAL.helpers.pad2
 
-    it('with string', function () {
+    it('with string', () => {
       expect(subject('')).to.equal('00')
       expect(subject('1')).to.equal('01')
       expect(subject('12')).to.equal('12')
       expect(subject('123')).to.equal('123')
     })
 
-    it('with number', function () {
+    it('with number', () => {
       expect(subject(0)).to.equal('00')
       expect(subject(1)).to.equal('01')
       expect(subject(12)).to.equal('12')
@@ -71,7 +73,7 @@ describe('ICAL.helpers', () => {
       cal.getFirstSubcomponent('vevent')!.
         getFirstProperty('dtend')!.setParameter('tzid', 'America/Atikokan')
       let vtimezones = cal.getAllSubcomponents('vtimezone')!
-      expect(vtimezones.length).to.have.lengthOf(1)
+      expect(vtimezones).to.have.lengthOf(1)
 
       vtimezones = subject(cal).getAllSubcomponents('vtimezone')
       expect(vtimezones).to.have.lengthOf(2)

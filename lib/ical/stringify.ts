@@ -136,7 +136,7 @@ stringify.property = function (property: Array<any>, designSet?: DesignSet, noFo
   }
 
   let propDetails
-  let multiValue: null | string = null
+  let multiValue: undefined | string
   let structuredValue = ''
   let isDefault = false
 

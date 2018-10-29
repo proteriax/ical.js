@@ -1,6 +1,8 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { describe } from 'mocha'
 import { expect } from 'chai'
+
+const ICAL = getICAL()
 
 describe('ical/period', () => {
   const start = ICAL.Time.fromString('1970-01-02T03:04:05Z')
@@ -139,7 +141,7 @@ describe('ical/period', () => {
 
       expect(subject.start).to.include(start, 'start date')
       expect(subject.end).to.include(end, 'end date')
-      expect(subject.duration).to.be.null
+      expect(subject.duration).to.not.exist
     })
     it('valid start,duration', () => {
       const subject = ICAL.Period.fromData({
@@ -148,7 +150,7 @@ describe('ical/period', () => {
       })
 
       expect(subject.start).to.include(start, 'start date')
-      expect(subject.end).to.be.null
+      expect(subject.end).to.not.exist
       expect(subject.duration).to.include(duration, 'duration')
     })
 
@@ -157,27 +159,24 @@ describe('ical/period', () => {
         start: start,
       })
       expect(subject.start).to.include(start, 'start date')
-      expect(subject.end).to.be.null
-      expect(subject.duration).to.be.null
+      expect(subject.end).to.not.exist
+      expect(subject.duration).to.not.exist
     })
 
     it('start value exists but is null', () => {
       const subject = ICAL.Period.fromData({
         duration: duration,
       })
-      expect(subject.start).to.be.null
-      expect(subject.end).to.be.null
+      expect(subject.start).to.not.exist
+      expect(subject.end).to.not.exist
       expect(subject.duration).to.include(duration, 'duration')
     })
 
     it('duration value exists but is null', () => {
-      const subject = ICAL.Period.fromData({
-        start: start,
-        duration: null,
-      })
+      const subject = ICAL.Period.fromData({ start })
       expect(subject.start).to.include(start, 'start date')
-      expect(subject.end).to.be.null
-      expect(subject.duration).to.be.null
+      expect(subject.end).to.not.exist
+      expect(subject.duration).to.not.exist
     })
 
     it('start,end and duration', () => {
@@ -195,24 +194,22 @@ describe('ical/period', () => {
         start: start,
         duration: duration
       })
-      expect(subject.start, start).to.include('start date')
-      expect(subject.end).to.be.null
+      expect(subject.start).to.include(start, 'start date')
+      expect(subject.end).to.not.exist
       expect(subject.duration).to.include(duration, 'duration')
     })
 
     it('invalid start value', () => {
       expect(() => {
         ICAL.Period.fromData({
-          start: '1970-01-02T03:04:05Z',
-          end: end
+          start: '1970-01-02T03:04:05Z' as any, end,
         })
       }).to.throw(/start must be an instance/)
     })
     it('invalid end value', () => {
       expect(() => {
         ICAL.Period.fromData({
-          start: start,
-          end: '1970-01-02T03:04:05Z'
+          start, end: '1970-01-02T03:04:05Z' as any
         })
       }).to.throw(/end must be an instance/)
     })
@@ -220,7 +217,7 @@ describe('ical/period', () => {
       expect(() => {
         ICAL.Period.fromData({
           start: start,
-          duration: 'PT1S',
+          duration: 'PT1S' as any,
         })
       }).to.throw(/duration must be an instance/)
     })

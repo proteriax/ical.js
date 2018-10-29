@@ -432,11 +432,11 @@ export class RecurExpansion {
    * @private
    * @return {?RecurIterator}    Found iterator.
    */
-  _nextRecurrenceIter(): RecurIterator | null {
+  _nextRecurrenceIter(): RecurIterator | undefined {
     const iters = this.ruleIterators
 
     if (iters.length === 0) {
-      return null
+      return
     }
 
     let len = iters.length

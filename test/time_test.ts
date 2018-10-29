@@ -1,13 +1,13 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { defineSample, useTimezones } from './helper'
 import { describe, it } from 'mocha'
-import { WeekDay } from '../lib/ical';
+import { WeekDay } from '../lib/ical'
+
+const ICAL = getICAL()
+const { Component, Duration, Time, Timezone, TimezoneService } = ICAL
 
 describe('icaltime', () => {
-  const Time = ICAL.Time
-  const Timezone = ICAL.Timezone
-
   it('round trip', () => {
     const f = new Time({
       second: 1,
@@ -24,7 +24,7 @@ describe('icaltime', () => {
     // TODO also check UTC dates
 
     g.reset()
-    expect(g).to.equal(Time.epochTime.toString())
+    expect(g.toString()).to.equal(Time.epochTime.toString())
   })
 
   describe('initialize', async () => {
@@ -32,14 +32,14 @@ describe('icaltime', () => {
 
     it('with timezone', () => {
       const parsed = ICAL.parse(icsData)
-      const vcalendar = new ICAL.Component(parsed)
+      const vcalendar = new Component(parsed)
       const vtimezone = vcalendar.getFirstSubcomponent('vtimezone')!
       const tzid = vtimezone.getFirstPropertyValue('tzid')
 
-      ICAL.TimezoneService.register(vtimezone)
+      TimezoneService.register(vtimezone)
 
       // utc -5
-      const time = new ICAL.Time({
+      const time = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -50,8 +50,7 @@ describe('icaltime', () => {
       // -5
       expect(time.utcOffset() / 3600).to.equal(-5)
 
-      expect(
-        time.toUnixTime()).to.equal(
+      expect(time.toUnixTime()).to.equal(
         Date.UTC(2012, 0, 1, 15) / 1000
       )
     })
@@ -60,7 +59,7 @@ describe('icaltime', () => {
   describe('.icaltime', () => {
     function verify(time, type: string) {
       it('convert time ' + JSON.stringify(time), () => {
-        expect(new ICAL.Time(time).icaltype).to.equal(type)
+        expect(new Time(time).icaltype).to.equal(type)
       })
     }
 
@@ -71,14 +70,14 @@ describe('icaltime', () => {
     verify({ year: 2013, isDate: false }, 'date-time')
 
     it('converting types during runtime', () => {
-      const time = new ICAL.Time({ year: 2013, isDate: false })
+      const time = new Time({ year: 2013, isDate: false })
       time.isDate = true
       expect(time.icaltype).to.equal('date')
     })
   })
 
   describe('setters', () => {
-    const subject = new ICAL.Time({
+    const createSubject = () => new Time({
       year: 2012,
       month: 12,
       day: 31,
@@ -86,16 +85,17 @@ describe('icaltime', () => {
       // is treated as a date rather then
       // date-time and hour/minute/second will
       // not be normalized/adjusted.
-      hour: 0
+      hour: 0,
     })
 
-    function movedToNextYear() {
+    function movedToNextYear(subject: ical.Time) {
       expect(subject.day).to.equal(1)
       expect(subject.month).to.equal(1)
       expect(subject.year).to.equal(2013)
     }
 
     it('.month / .day beyond the year', () => {
+      const subject = createSubject()
       subject.day++
       subject.month++
 
@@ -105,31 +105,34 @@ describe('icaltime', () => {
     })
 
     it('.hour', () => {
+      const subject = createSubject()
       subject.hour = 23
       subject.hour++
 
-      movedToNextYear()
+      movedToNextYear(subject)
       expect(subject.hour).to.equal(0)
     })
 
     it('.minute', () => {
+      const subject = createSubject()
       subject.minute = 59
       subject.hour = 23
       subject.minute++
 
-      movedToNextYear()
+      movedToNextYear(subject)
       expect(subject.hour).to.equal(0)
       expect(subject.minute).to.equal(0)
     })
 
     it('.second', () => {
+      const subject = createSubject()
       subject.hour = 23
       subject.minute = 59
       subject.second = 59
 
       subject.second++
 
-      movedToNextYear()
+      movedToNextYear(subject)
       expect(subject.minute).to.equal(0)
       expect(subject.second).to.equal(0)
     })
@@ -140,7 +143,7 @@ describe('icaltime', () => {
 
     it('diff between two times in different timezones', () => {
       // 3 hours ahead of west
-      const east = new ICAL.Time({
+      const east = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -149,8 +152,7 @@ describe('icaltime', () => {
         timezone: 'America/New_York'
       })
 
-
-      const west = new ICAL.Time({
+      const west = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -174,7 +176,7 @@ describe('icaltime', () => {
     })
 
     it('diff between two times in same timezone', () => {
-      const t1 = new ICAL.Time({
+      const t1 = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -182,7 +184,7 @@ describe('icaltime', () => {
         minute: 50,
         timezone: 'America/Los_Angeles'
       })
-      const t2 = new ICAL.Time({
+      const t2 = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -206,7 +208,7 @@ describe('icaltime', () => {
       })
     })
     it('negative absolute difference', () => {
-      const t1 = new ICAL.Time({
+      const t1 = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -214,7 +216,7 @@ describe('icaltime', () => {
         minute: 30,
         timezone: 'America/Los_Angeles'
       })
-      const t2 = new ICAL.Time({
+      const t2 = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -367,7 +369,7 @@ describe('icaltime', () => {
       const msg = human + ' should be #' + dayOfWeek + ' day'
 
       it(msg, () => {
-        const subject = ICAL.Time.fromJSDate(date)
+        const subject = Time.fromJSDate(date)
         expect(subject.dayOfWeek()).to.equal(dayOfWeek)
       })
     })
@@ -452,7 +454,7 @@ describe('icaltime', () => {
   describe('#getDominicalLetter', () => {
     it('instance', () => {
       const subject = (year: number) =>
-        new ICAL.Time({ year }).getDominicalLetter()
+        new Time({ year }).getDominicalLetter()
 
       expect(subject(1989)).to.equal('A')
       expect(subject(1990)).to.equal('G')
@@ -472,7 +474,7 @@ describe('icaltime', () => {
 
     })
     it('static', () => {
-      const subject = ICAL.Time.getDominicalLetter
+      const subject = Time.getDominicalLetter
       expect(subject(1989)).to.equal('A')
       expect(subject(1990)).to.equal('G')
       expect(subject(1991)).to.equal('F')
@@ -618,7 +620,7 @@ describe('icaltime', () => {
   describe('#toUnixTime', () => {
     it('without timezone', () => {
       const date = new Date(2012, 0, 22, 1, 7, 39)
-      const time = new ICAL.Time({
+      const time = new Time({
         year: date.getUTCFullYear(),
         month: date.getUTCMonth() + 1,
         day: date.getUTCDate(),
@@ -634,15 +636,15 @@ describe('icaltime', () => {
       const icsData = await defineSample('timezones/America/Los_Angeles.ics')
 
       const parsed = ICAL.parse(icsData)
-      const vcalendar = new ICAL.Component(parsed)
+      const vcalendar = new Component(parsed)
       const comp = vcalendar.getFirstSubcomponent('vtimezone')!
 
-      const zone = new ICAL.Timezone({
+      const zone = new Timezone({
         tzid: comp.getFirstPropertyValue('tzid'),
         component: comp,
       })
 
-      const subject = new ICAL.Time({
+      const subject = new Time({
         year: 2012,
         month: 1,
         day: 1,
@@ -664,7 +666,7 @@ describe('icaltime', () => {
   })
 
   it('#fromUnixTime', () => {
-    const time = new ICAL.Time({
+    const time = new Time({
       year: 2012,
       month: 1,
       day: 5,
@@ -674,7 +676,7 @@ describe('icaltime', () => {
       timezone: 'Z'
     })
 
-    const otherTime = new ICAL.Time()
+    const otherTime = new Time()
     otherTime.fromUnixTime(time.toUnixTime())
 
     expect(
@@ -753,19 +755,19 @@ describe('icaltime', () => {
     })
     it('with different wkst', () => {
       const subject = Time.fromData({ year: 2012, month: 1, day: 1 })
-      const result = subject.startDoyWeek(ICAL.Time.MONDAY)
+      const result = subject.startDoyWeek(Time.MONDAY)
       expect(result).to.equal(-5)
     })
     it('falls on zero', () => {
       const subject = Time.fromData({ year: 2013, month: 1, day: 1 })
-      const result = subject.startDoyWeek(ICAL.Time.MONDAY)
+      const result = subject.startDoyWeek(Time.MONDAY)
       expect(result).to.equal(0)
     })
   })
 
   describe('#toString', () => {
     it('from fractional seconds', () => {
-      const subject = new ICAL.Time({
+      const subject = new Time({
         year: 2012,
         month: 10,
         day: 10,
@@ -784,12 +786,12 @@ describe('icaltime', () => {
 
   describe('#toICALString', () => {
     it('date', () => {
-      const subject = ICAL.Time.fromString('2012-10-12')
+      const subject = Time.fromString('2012-10-12')
       expect(subject.toICALString()).to.equal('20121012')
     })
 
     it('date-time', () => {
-      const subject = ICAL.Time.fromString('2012-10-12T07:08:09')
+      const subject = Time.fromString('2012-10-12T07:08:09')
       expect(subject.toICALString()).to.equal('20121012T070809')
     })
   })
@@ -916,37 +918,37 @@ describe('icaltime', () => {
       expect(diff.toSeconds()).to.equal(3)
 
       cp = dt.clone()
-      cp.addDuration(ICAL.Duration.fromString('PT1S'))
-      expect(cp).to.equal(data.expect_1s)
-      cp.addDuration(ICAL.Duration.fromString('-PT1S'))
+      cp.addDuration(Duration.fromString('PT1S'))
+      expect(cp.toString()).to.equal(data.expect_1s)
+      cp.addDuration(Duration.fromString('-PT1S'))
       expect(cp.toString()).to.equal(dt.toString())
 
-      cp.addDuration(ICAL.Duration.fromString('PT1M'))
-      expect(cp).to.equal(data.expect_1m)
-      cp.addDuration(ICAL.Duration.fromString('-PT1M'))
+      cp.addDuration(Duration.fromString('PT1M'))
+      expect(cp.toString()).to.equal(data.expect_1m)
+      cp.addDuration(Duration.fromString('-PT1M'))
       expect(cp.toString()).to.equal(dt.toString())
 
-      cp.addDuration(ICAL.Duration.fromString('PT1H'))
-      expect(cp).to.equal(data.expect_1h)
-      cp.addDuration(ICAL.Duration.fromString('-PT1H'))
+      cp.addDuration(Duration.fromString('PT1H'))
+      expect(cp.toString()).to.equal(data.expect_1h)
+      cp.addDuration(Duration.fromString('-PT1H'))
       expect(cp.toString()).to.equal(dt.toString())
 
-      cp.addDuration(ICAL.Duration.fromString('P1D'))
-      expect(cp).to.equal(data.expect_1d)
-      cp.addDuration(ICAL.Duration.fromString('-P1D'))
+      cp.addDuration(Duration.fromString('P1D'))
+      expect(cp.toString()).to.equal(data.expect_1d)
+      cp.addDuration(Duration.fromString('-P1D'))
       expect(cp.toString()).to.equal(dt.toString())
 
-      cp.addDuration(ICAL.Duration.fromString('P1W'))
-      expect(cp).to.equal(data.expect_1w)
-      cp.addDuration(ICAL.Duration.fromString('-P1W'))
+      cp.addDuration(Duration.fromString('P1W'))
+      expect(cp.toString()).to.equal(data.expect_1w)
+      cp.addDuration(Duration.fromString('-P1W'))
       expect(cp.toString()).to.equal(dt.toString())
 
       cp = dt.clone()
-      cp.addDuration(ICAL.Duration.fromString('PT24H'))
+      cp.addDuration(Duration.fromString('PT24H'))
       cp.isDate = true
       cp.isDate// force normalize
       cp.isDate = false
-      expect(cp).to.equal(data.expect_1d)
+      expect(cp.toString()).to.equal(data.expect_1d)
     }
   })
 
@@ -977,7 +979,7 @@ describe('icaltime', () => {
       const add_seconds = data.add_seconds || 0
 
       dt.second += add_seconds
-      expect(dt).to.equal(data.expect)
+      expect(dt.toString()).to.equal(data.expect)
     }
   })
 
@@ -993,8 +995,8 @@ describe('icaltime', () => {
         expect(data.minute).to.equal(dt.minute)
         expect(data.second).to.equal(dt.second)
         expect(data.leap_year).to.equal(Time.isLeapYear(dt.year))
-        expect(data.dayOfWeek).to.equal(dt.dayOfWeek().toString())
-        expect(data.dayOfYear).to.equal(dt.dayOfYear().toString())
+        expect(data.dayOfWeek).to.equal(dt.dayOfWeek())
+        expect(data.dayOfYear).to.equal(dt.dayOfYear())
         expect(data.startOfWeek).to.equal(dt.startOfWeek().toString())
         expect(data.endOfWeek).to.equal(dt.endOfWeek().toString())
         expect(data.startOfMonth).to.equal(dt.startOfMonth().toString())
@@ -1041,7 +1043,7 @@ describe('icaltime', () => {
       endOfYear: '2012-12-31',
       startDoyWeek: 1,
       weekNumber: 1,
-      getDominicalLetter: 'AG'
+      getDominicalLetter: 'AG',
     })
     // A date in week number 53
     testDateProperties('2005-01-01T00:00:00', {
@@ -1063,7 +1065,7 @@ describe('icaltime', () => {
       endOfYear: '2005-12-31',
       getDominicalLetter: 'B',
       startDoyWeek: -5,
-      weekNumber: 53
+      weekNumber: 53,
     })
     // A time in week number 28
     testDateProperties('2015-07-08T01:02:03', {
@@ -1085,7 +1087,7 @@ describe('icaltime', () => {
       endOfYear: '2015-12-31',
       startDoyWeek: 186,
       getDominicalLetter: 'D',
-      weekNumber: 28
+      weekNumber: 28,
     })
   })
 
@@ -1093,58 +1095,58 @@ describe('icaltime', () => {
     const test_data = [{ /* A Sunday */
       str: '2012-01-01T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-01',
-          MONDAY: '2011-12-26',
-          TUESDAY: '2011-12-27',
-          WEDNESDAY: '2011-12-28',
-          THURSDAY: '2011-12-29',
-          FRIDAY: '2011-12-30',
-          SATURDAY: '2011-12-31'
-      }
+        SUNDAY: '2012-01-01',
+        MONDAY: '2011-12-26',
+        TUESDAY: '2011-12-27',
+        WEDNESDAY: '2011-12-28',
+        THURSDAY: '2011-12-29',
+        FRIDAY: '2011-12-30',
+        SATURDAY: '2011-12-31',
+      },
     }, { /* A Monday */
       str: '2012-01-02T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-01',
-          MONDAY: '2012-01-02',
-          TUESDAY: '2011-12-27',
-          WEDNESDAY: '2011-12-28',
-          THURSDAY: '2011-12-29',
-          FRIDAY: '2011-12-30',
-          SATURDAY: '2011-12-31'
-      }
+        SUNDAY: '2012-01-01',
+        MONDAY: '2012-01-02',
+        TUESDAY: '2011-12-27',
+        WEDNESDAY: '2011-12-28',
+        THURSDAY: '2011-12-29',
+        FRIDAY: '2011-12-30',
+        SATURDAY: '2011-12-31',
+      },
     }, { /* A Tuesday */
       str: '2012-01-03T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-01',
-          MONDAY: '2012-01-02',
-          TUESDAY: '2012-01-03',
-          WEDNESDAY: '2011-12-28',
-          THURSDAY: '2011-12-29',
-          FRIDAY: '2011-12-30',
-          SATURDAY: '2011-12-31'
-      }
+        SUNDAY: '2012-01-01',
+        MONDAY: '2012-01-02',
+        TUESDAY: '2012-01-03',
+        WEDNESDAY: '2011-12-28',
+        THURSDAY: '2011-12-29',
+        FRIDAY: '2011-12-30',
+        SATURDAY: '2011-12-31'
+      },
     }, { /* A Wednesday */
       str: '2012-01-04T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-01',
-          MONDAY: '2012-01-02',
-          TUESDAY: '2012-01-03',
-          WEDNESDAY: '2012-01-04',
-          THURSDAY: '2011-12-29',
-          FRIDAY: '2011-12-30',
-          SATURDAY: '2011-12-31'
+        SUNDAY: '2012-01-01',
+        MONDAY: '2012-01-02',
+        TUESDAY: '2012-01-03',
+        WEDNESDAY: '2012-01-04',
+        THURSDAY: '2011-12-29',
+        FRIDAY: '2011-12-30',
+        SATURDAY: '2011-12-31'
       }
     }, { /* A Thursday */
       str: '2012-01-05T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-01',
-          MONDAY: '2012-01-02',
-          TUESDAY: '2012-01-03',
-          WEDNESDAY: '2012-01-04',
-          THURSDAY: '2012-01-05',
-          FRIDAY: '2011-12-30',
-          SATURDAY: '2011-12-31'
-      }
+        SUNDAY: '2012-01-01',
+        MONDAY: '2012-01-02',
+        TUESDAY: '2012-01-03',
+        WEDNESDAY: '2012-01-04',
+        THURSDAY: '2012-01-05',
+        FRIDAY: '2011-12-30',
+        SATURDAY: '2011-12-31'
+      },
     }, { /* A Friday */
       str: '2012-01-06T12:01:00',
       firstDayOfWeek: {
@@ -1155,7 +1157,7 @@ describe('icaltime', () => {
         THURSDAY: '2012-01-05',
         FRIDAY: '2012-01-06',
         SATURDAY: '2011-12-31'
-      }
+      },
     }, { /* A Saturday */
       str: '2012-01-07T12:01:00',
       firstDayOfWeek: {
@@ -1166,7 +1168,7 @@ describe('icaltime', () => {
         THURSDAY: '2012-01-05',
         FRIDAY: '2012-01-06',
         SATURDAY: '2012-01-07'
-      }
+      },
     }]
 
     for (const datakey in test_data) {
@@ -1174,7 +1176,7 @@ describe('icaltime', () => {
       const dt = Time.fromString(data.str)
       for (const day in data.firstDayOfWeek) {
         expect(data.firstDayOfWeek[day])
-          .to.equal(dt.startOfWeek(ICAL.Time[day]).toString())
+          .to.equal(dt.startOfWeek(Time[day]).toString())
       }
     }
   })
@@ -1194,24 +1196,24 @@ describe('icaltime', () => {
     }, { /* A Monday */
       str: '2012-01-02T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-07',
-          MONDAY: '2012-01-08',
-          TUESDAY: '2012-01-02',
-          WEDNESDAY: '2012-01-03',
-          THURSDAY: '2012-01-04',
-          FRIDAY: '2012-01-05',
-          SATURDAY: '2012-01-06'
+        SUNDAY: '2012-01-07',
+        MONDAY: '2012-01-08',
+        TUESDAY: '2012-01-02',
+        WEDNESDAY: '2012-01-03',
+        THURSDAY: '2012-01-04',
+        FRIDAY: '2012-01-05',
+        SATURDAY: '2012-01-06'
       }
     }, { /* A Tuesday */
       str: '2012-01-03T12:01:00',
       firstDayOfWeek: {
-          SUNDAY: '2012-01-07',
-          MONDAY: '2012-01-08',
-          TUESDAY: '2012-01-09',
-          WEDNESDAY: '2012-01-03',
-          THURSDAY: '2012-01-04',
-          FRIDAY: '2012-01-05',
-          SATURDAY: '2012-01-06'
+        SUNDAY: '2012-01-07',
+        MONDAY: '2012-01-08',
+        TUESDAY: '2012-01-09',
+        WEDNESDAY: '2012-01-03',
+        THURSDAY: '2012-01-04',
+        FRIDAY: '2012-01-05',
+        SATURDAY: '2012-01-06'
       }
     }, { /* A Wednesday */
       str: '2012-01-04T12:01:00',
@@ -1263,7 +1265,7 @@ describe('icaltime', () => {
       const data = test_data[datakey]
       const dt = Time.fromString(data.str)
       for (const day in data.firstDayOfWeek) {
-        expect(data.firstDayOfWeek[day]).to.equal(dt.endOfWeek(ICAL.Time[day]).toString())
+        expect(data.firstDayOfWeek[day]).to.equal(dt.endOfWeek(Time[day]).toString())
       }
     }
   })
@@ -1304,7 +1306,10 @@ describe('icaltime', () => {
     it('simple comparison one with a timezone, one without', () => {
       // Floating timezone is effectively UTC. New York is 5 hours behind.
       const a = Time.fromString('2001-01-01T00:00:00')
-      a.zone = ICAL.TimezoneService.get('America/New_York')!
+      a.zone = TimezoneService.get('America/New_York')!
+      if (!a.zone) {
+        throw new Error(Array.from(TimezoneService.zones.keys()).join(' '))
+      }
       let b = Time.fromString('2001-01-01T05:00:00')
       b.zone = Timezone.localTimezone
       expect(a.compare(b)).to.equal(0)
@@ -1354,7 +1359,7 @@ describe('icaltime', () => {
 
     it('both are dates', () => {
       const a = Time.fromString('2014-07-20')
-      a.zone = ICAL.TimezoneService.get('America/New_York')!
+      a.zone = TimezoneService.get('America/New_York')!
       const b = Time.fromString('2014-07-20')
       b.zone = Timezone.localTimezone
 
@@ -1373,7 +1378,7 @@ describe('icaltime', () => {
 
     it('one is date, one isnt', () => {
       const a = Time.fromString('2014-07-20T12:00:00.000')
-      a.zone = ICAL.TimezoneService.get('America/New_York')!
+      a.zone = TimezoneService.get('America/New_York')!
       const b = Time.fromString('2014-07-20')
       b.zone = Timezone.localTimezone
 
@@ -1394,7 +1399,7 @@ describe('icaltime', () => {
       const a = Time.fromString('2014-07-20T12:00:00.000')
       a.zone = Timezone.localTimezone
       const b = Time.fromString('2014-07-20')
-      b.zone = ICAL.TimezoneService.get('America/New_York')!
+      b.zone = TimezoneService.get('America/New_York')!
 
       expect(!a.isDate)
       expect(b.isDate)
@@ -1411,7 +1416,7 @@ describe('icaltime', () => {
 
     it('both are not dates', () => {
       const a = Time.fromString('2014-07-20T12:00:00.000')
-      a.zone = ICAL.TimezoneService.get('America/New_York')!
+      a.zone = TimezoneService.get('America/New_York')!
       const b = Time.fromString('2014-07-20T12:00:00.000')
       b.zone = Timezone.localTimezone
 
@@ -1430,9 +1435,9 @@ describe('icaltime', () => {
 
     it('two timezones', () => {
       const a = Time.fromString('2014-07-20T02:00:00.000')
-      a.zone = ICAL.TimezoneService.get('America/New_York')!
+      a.zone = TimezoneService.get('America/New_York')!
       const b = Time.fromString('2014-07-19T23:00:00.000')
-      b.zone = ICAL.TimezoneService.get('America/Los_Angeles')!
+      b.zone = TimezoneService.get('America/Los_Angeles')!
 
       expect(!a.isDate)
       expect(!b.isDate)
@@ -1505,7 +1510,7 @@ describe('icaltime', () => {
     })
     expect(time.toUnixTime()).to.equal(1428064496)
 
-    time.addDuration(ICAL.Duration.fromString('P1D'))
+    time.addDuration(Duration.fromString('P1D'))
     expect(time.toUnixTime()).to.equal(1428150896)
 
     time.fromUnixTime(1234567890)
@@ -1562,14 +1567,14 @@ describe('icaltime', () => {
 
     describe('weekOneStarts', () => {
       function testWeekOne(year, dates, only?: boolean) {
-        const dom = ICAL.Time.getDominicalLetter(year);
+        const dom = Time.getDominicalLetter(year);
         (only ? it.only : it)(year + ' (' + dom + ')', () => {
           for (const wkday in dates) {
-            const icalwkday = ICAL.Time[wkday]
+            const icalwkday = Time[wkday]
             const w1st = Time.weekOneStarts(year, icalwkday)
             expect(dates[wkday]).to.equal(w1st.toString(), wkday)
 
-            const startOfWeek = ICAL.Time.fromString(dates[wkday])
+            const startOfWeek = Time.fromString(dates[wkday])
             expect(startOfWeek.weekNumber(icalwkday)).to.equal(1, wkday)
             startOfWeek.day--
             expect(startOfWeek.weekNumber(icalwkday)).to.be.above(51, wkday)

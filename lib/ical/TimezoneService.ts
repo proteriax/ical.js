@@ -6,7 +6,7 @@
 import { Timezone } from './Timezone'
 import { Component } from './Component'
 
-const zones = new Map<string, Timezone>()
+export const zones = new Map<string, Timezone>()
 
 export function reset() {
   const utc = Timezone.utcTimezone

@@ -1,7 +1,9 @@
-import * as ICAL from './ical'
+import { getICAL } from './ical'
 import { expect } from 'chai'
 import { useTimezones } from './helper'
 import { describe, it } from 'mocha'
+
+const ICAL = getICAL()
 
 describe('vcard time', () => {
   // Lots of things are also covered in the design test

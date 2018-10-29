@@ -10,8 +10,11 @@ import * as TimezoneService from './TimezoneService'
  * The number of characters before iCalendar line folding should occur
  * @default 75
  */
-export const foldLength: number = 75
+export let foldLength = 75
 
+export function setFoldLength(length: number) {
+  foldLength = length
+}
 
 /**
  * The character(s) to be used for a newline. The default value is provided by
